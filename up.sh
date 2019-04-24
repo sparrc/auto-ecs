@@ -77,5 +77,5 @@ containerARN=$(aws ecs list-container-instances --cluster "$NAME" | jq -r '.cont
 containerID=$(aws ecs describe-container-instances --cluster "$NAME" --container-instances "$containerARN" | jq -r '.containerInstances[].ec2InstanceId')
 publicIP=$(aws ec2 describe-instances --instance-ids "$containerID" | jq -r '.Reservations[].Instances[].PublicIpAddress')
 
-echo "Public IP of your Container Instance: $publicIP"
+echo "SSH to Your Container Instance: ssh ec2-user@$publicIP"
 
