@@ -33,25 +33,7 @@ add-zsh-hook periodic gstat
 # prompt format
 PROMPT="CONTAINER INST %{$fg[blue]%}%4d%{$fg[green]%}%1v%{$fg[red]%}%2v%{$fg_bold[red]%} %# %{$reset_color%}"
 
-HISTFILE=~/.zsh_history                            # where to store zsh config
-HISTSIZE=7500                                      # lines of history to keep in mem
-SAVEHIST=30000                                     # lines of history to save to file
-HISTORY_IGNORE="(history|ls|pwd|exit|ll|la|clear)" # commands history ignores
-
-setopt APPEND_HISTORY           # append
-setopt HIST_IGNORE_DUPS         # no duplicate
-setopt HIST_IGNORE_ALL_DUPS     # no duplicate
-setopt HIST_REDUCE_BLANKS       # trim blanks
-setopt SHARE_HISTORY            # share hist between sessions
-setopt HIST_IGNORE_SPACE        # ignore commands prefixed by a space
-setopt HIST_NO_STORE            # dont store dupes
-setopt BANG_HIST                # !keyword
-setopt NO_BEEP                  # no terminal beeps
-setopt HIST_SAVE_NO_DUPS        # more de-duping
-setopt HIST_EXPIRE_DUPS_FIRST
-setopt HIST_FIND_NO_DUPS
-setopt INTERACTIVECOMMENTS      # recognize comments on cli
-setopt NO_COMPLETE_ALIASES      # autocomplete aliases, this seems to do the opposite of what it sounds like
+setopt APPEND_HISTORY SHARE_HISTORY BANG_HIST NO_BEEP INTERACTIVECOMMENTS NO_COMPLETE_ALIASES
 
 # completion
 zstyle ':completion:*' menu select
@@ -60,15 +42,9 @@ bindkey '\e[A' history-beginning-search-backward
 bindkey '\e[B' history-beginning-search-forward
 bindkey '\e[3~' delete-char # 'forward' delete key
 
-# git aliases
 alias gd='git diff'
 alias gc='git checkout'
 alias gs='git status --short'
-# displays the current HEAD commit
-alias gv='git rev-parse HEAD'
-# show all branches
-alias gb='git rev-parse --abbrev-ref HEAD'
-# update remotes, checkout master, pull origin onto the master branch
 alias gu='git fetch --all --prune &&
           git checkout master &&
           git pull origin master --tags &&
