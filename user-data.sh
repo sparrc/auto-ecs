@@ -59,6 +59,20 @@ zstyle ':completion:*' menu select
 bindkey '\e[A' history-beginning-search-backward
 bindkey '\e[B' history-beginning-search-forward
 bindkey '\e[3~' delete-char # 'forward' delete key
+
+# git aliases
+alias gd='git diff'
+alias gc='git checkout'
+alias gs='git status --short'
+# displays the current HEAD commit
+alias gv='git rev-parse HEAD'
+# show all branches
+alias gb='git rev-parse --abbrev-ref HEAD'
+# update remotes, checkout master, pull origin onto the master branch
+alias gu='git fetch --all --prune &&
+          git checkout master &&
+          git pull origin master --tags &&
+          git checkout -'
 EOF
 
 # install tig
@@ -80,6 +94,8 @@ git config --global pull.rebase true
 git config --global branch.autosetuprebase always
 git remote add upstream https://github.com/aws/amazon-ecs-agent.git
 git fetch --all
+# make a release in background
+nohup make release > /home/ec2-user/make-release.out &
 
 # chown and chgrp any files/directories created with root ownership
 chown -R ec2-user /home/ec2-user
