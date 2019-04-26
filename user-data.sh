@@ -5,10 +5,29 @@ cat << EOF >> /etc/ecs/ecs.config
 ECS_LOGLEVEL=warn
 EOF
 
-yum update -y
+cat << EOF > /home/ec2-user/runtests.sh
+cd /home/ec2-user/go/src/github.com/aws/amazon-ecs-agent
+sudo systemctl stop ecs
+make test-registry
+make release
+docker tag amazon/amazon-ecs-agent:latest amazon/amazon-ecs-agent:make
 
-# install tools
-yum install -y wget vim git jq aws-cli zsh
+make test # unit tests
+make run-integ-tests
+# Setup functional tests
+sudo sysctl -w net.ipv4.conf.all.route_localnet=1
+sudo iptables -t nat -A PREROUTING -p tcp -d 169.254.170.2 --dport 80 -j DNAT --to-destination 127.0.0.1:51679
+sudo iptables -t nat -A OUTPUT -d 169.254.170.2 -p tcp -m tcp --dport 80 -j REDIRECT --to-ports 51679
+export TASK_IAM_ROLE_ARN="arn:aws:iam::039193556298:role/TaskIAMRoleArn"
+export ECS_FTS_EXECUTION_ROLE="arn:aws:iam::039193556298:role/ecsTaskExecutionRole"
+export AWS_SECRET_ACCESS_KEY="$AWS_SECRET_ACCESS_KEY"
+export AWS_ACCESS_KEY_ID="$AWS_ACCESS_KEY_ID"
+# Run functional tests -- note: your ec2 instance will need access to your personal AWS account for these tests
+make run-functional-tests
+EOF
+
+yum update -y
+yum install -y wget vim git jq aws-cli zsh gcc
 
 # change default shell to zsh and write zshrc
 usermod --shell /bin/zsh ec2-user
@@ -70,8 +89,6 @@ git config --global pull.rebase true
 git config --global branch.autosetuprebase always
 git remote add upstream https://github.com/aws/amazon-ecs-agent.git
 git fetch --all
-# make a release in background
-nohup make release > /home/ec2-user/make-release.out &
 
 # chown and chgrp any files/directories created with root ownership
 chown -R ec2-user /home/ec2-user
