@@ -27,7 +27,7 @@ make run-functional-tests
 EOF
 
 yum update -y
-yum install -y wget vim git jq aws-cli zsh gcc
+yum install -y wget vim git jq aws-cli zsh gcc rsync
 
 # change default shell to zsh and write zshrc
 usermod --shell /bin/zsh ec2-user
