@@ -7,11 +7,15 @@ if [[ "$NAME" == "" ]]; then
     NAME="auto-$tmp"
 fi
 
+region=$(jq -r .aws_region < ./config.json)
 # configure the cluster
-ecs-cli configure --cluster "$NAME" --config-name "$NAME" --region us-west-2 --default-launch-type EC2
+ecs-cli configure --cluster "$NAME" --config-name "$NAME" --region "$region" --default-launch-type EC2
+
+instance=$(jq -r .ec2_container_instance_type < ./config.json)
+key=$(jq -r .ec2_ssh_keypair_name < ./config.json)
 
 # bring the cluster up
-upout=$(ecs-cli up --cluster-config "$NAME" --instance-role ecsInstanceRole --instance-type m5.large --keypair dev-ec2 --extra-user-data ./user-data.sh | tee /dev/stderr)
+upout=$(ecs-cli up --cluster-config "$NAME" --instance-role ecsInstanceRole --instance-type "$instance" --keypair "$key" --extra-user-data ./user-data.sh | tee /dev/stderr)
 
 # parse all the IDs out of the cluster up output
 vpcID=$(echo "$upout" | grep "VPC created" | sed -E 's/.*(vpc-.+$)/\1/')
