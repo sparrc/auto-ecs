@@ -15,7 +15,7 @@ instance=$(jq -r .ec2_container_instance_type < ./config.json)
 key=$(jq -r .ec2_ssh_keypair_name < ./config.json)
 
 # bring the cluster up
-upout=$(ecs-cli up --cluster-config "$NAME" --instance-role ecsInstanceRole --instance-type "$instance" --keypair "$key" --extra-user-data ./user-data.sh | tee /dev/stderr)
+upout=$(ecs-cli up --cluster-config "$NAME" --instance-role ecsInstanceRole --instance-type "$instance" --keypair "$key" --extra-user-data ./user-data.sh 2>&1 | tee /dev/stderr)
 
 # parse all the IDs out of the cluster up output
 vpcID=$(echo "$upout" | grep "VPC created" | sed -E 's/.*(vpc-.+$)/\1/')
@@ -51,9 +51,9 @@ services:
     logging:
       driver: awslogs
       options:
-        awslogs-group: $NAME
+        awslogs-group: auto-ecs-cluster
         awslogs-region: us-west-2
-        awslogs-stream-prefix: $serviceID
+        awslogs-stream-prefix: $NAME
 EOF
 
 cat << EOF > ecs-params.yml
@@ -76,6 +76,7 @@ run_params:
 EOF
 
 ecs-cli compose --project-name "$NAME" service up --create-log-groups --cluster-config "$NAME"
+sleep 5
 
 containerARN=$(aws ecs list-container-instances --cluster "$NAME" | jq -r '.containerInstanceArns[]')
 containerID=$(aws ecs describe-container-instances --cluster "$NAME" --container-instances "$containerARN" | jq -r '.containerInstances[].ec2InstanceId')

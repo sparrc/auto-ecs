@@ -1,6 +1,5 @@
 #!/bin/bash
 
-# set agent log level to WARN
 cat << EOF >> /etc/ecs/ecs.config
 ECS_LOGLEVEL=warn
 EOF
@@ -15,15 +14,24 @@ docker tag amazon/amazon-ecs-agent:latest amazon/amazon-ecs-agent:make
 make test # unit tests
 make run-integ-tests
 # Setup functional tests
-sudo sysctl -w net.ipv4.conf.all.route_localnet=1
-sudo iptables -t nat -A PREROUTING -p tcp -d 169.254.170.2 --dport 80 -j DNAT --to-destination 127.0.0.1:51679
-sudo iptables -t nat -A OUTPUT -d 169.254.170.2 -p tcp -m tcp --dport 80 -j REDIRECT --to-ports 51679
-export TASK_IAM_ROLE_ARN="arn:aws:iam::039193556298:role/TaskIAMRoleArn"
-export ECS_FTS_EXECUTION_ROLE="arn:aws:iam::039193556298:role/ecsTaskExecutionRole"
-export AWS_SECRET_ACCESS_KEY="$AWS_SECRET_ACCESS_KEY"
-export AWS_ACCESS_KEY_ID="$AWS_ACCESS_KEY_ID"
-# Run functional tests -- note: your ec2 instance will need access to your personal AWS account for these tests
-make run-functional-tests
+# sudo sysctl -w net.ipv4.conf.all.route_localnet=1
+# sudo iptables -t nat -A PREROUTING -p tcp -d 169.254.170.2 --dport 80 -j DNAT --to-destination 127.0.0.1:51679
+# sudo iptables -t nat -A OUTPUT -d 169.254.170.2 -p tcp -m tcp --dport 80 -j REDIRECT --to-ports 51679
+# export TASK_IAM_ROLE_ARN="arn:aws:iam::039193556298:role/TaskIAMRoleArn"
+# export ECS_FTS_EXECUTION_ROLE="arn:aws:iam::039193556298:role/ecsTaskExecutionRole"
+# export AWS_SECRET_ACCESS_KEY="TODO"
+# export AWS_ACCESS_KEY_ID="TODO"
+# # Run functional tests -- note: your ec2 instance will need access to your personal AWS account for these tests
+# make run-functional-tests
+EOF
+
+cat << EOF > /home/ec2-user/.vimrc
+set number mouse=a colorcolumn=80 smartindent tabstop=4 laststatus=2 nocompatible
+hi Comment ctermfg=darkgray
+" Remember location in file
+au BufReadPost * if line("'\"") > 1 && line("'\"") <= line("$") | exe "normal! g'\"" | endif
+" Disable autoindent with Ctrl-p for pasting (insert mode only)
+set pastetoggle=<C-P>
 EOF
 
 yum update -y
@@ -36,38 +44,19 @@ autoload -Uz compinit colors add-zsh-hook
 compinit -u     # autocomplete
 colors          # colors
 typeset -U PATH # no dupes in PATH
-
-gstat () {
-    if test -d ".git"; then
-        psvar[1]=" `git rev-parse --abbrev-ref HEAD`"
-        psvar[2]=`git diff-index --quiet HEAD -- || echo "*"`
-    else
-        psvar[1]=""
-        psvar[2]=""
-    fi
-}
-# get git meta-information periodically, every 1s
-PERIOD=1
-add-zsh-hook periodic gstat
 # prompt format
-PROMPT="CONTAINER INST %{$fg[blue]%}%4d%{$fg[green]%}%1v%{$fg[red]%}%2v%{$fg_bold[red]%} %# %{$reset_color%}"
-
+PROMPT="CONTAINER INST %{$fg[blue]%}%4d%{$fg[green]%}%{$fg[red]%}%{$fg_bold[red]%} %# %{$reset_color%}"
 setopt APPEND_HISTORY SHARE_HISTORY BANG_HIST NO_BEEP INTERACTIVECOMMENTS NO_COMPLETE_ALIASES
-
 # completion
 zstyle ':completion:*' menu select
 # oh-my-zsh style history completion
 bindkey '\e[A' history-beginning-search-backward
 bindkey '\e[B' history-beginning-search-forward
 bindkey '\e[3~' delete-char # 'forward' delete key
-
 alias gd='git diff'
 alias gc='git checkout'
 alias gs='git status --short'
-alias gu='git fetch --all --prune &&
-          git checkout master &&
-          git pull origin master --tags &&
-          git checkout -'
+alias gu='git fetch --all --prune && git checkout master && git pull origin master --tags && git checkout -'
 EOF
 
 # install tig
