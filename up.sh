@@ -1,21 +1,21 @@
 #!/bin/bash
 set -eou pipefail
 
-NAME="${1:-}"
-if [[ "$NAME" == "" ]]; then
+clusterName="${1:-}"
+if [[ "$clusterName" == "" ]]; then
     tmp=$(head -c150 /dev/urandom | tr -dc 'a-z' | head -c4)
-    NAME="auto-$tmp"
+    clusterName="auto-$tmp"
 fi
 
 region=$(jq -r .aws_region < ./config.json)
 # configure the cluster
-ecs-cli configure --cluster "$NAME" --config-name "$NAME" --region "$region" --default-launch-type EC2
+ecs-cli configure --cluster "$clusterName" --config-name "$clusterName" --region "$region" --default-launch-type EC2
 
 instance=$(jq -r .ec2_container_instance_type < ./config.json)
 key=$(jq -r .ec2_ssh_keypair_name < ./config.json)
 
 # bring the cluster up
-upout=$(ecs-cli up --cluster-config "$NAME" --instance-role ecsInstanceRole --instance-type "$instance" --keypair "$key" --extra-user-data ./user-data.sh 2>&1 | tee /dev/stderr)
+upout=$(ecs-cli up --cluster-config "$clusterName" --instance-role ecsInstanceRole --instance-type "$instance" --keypair "$key" --extra-user-data ./user-data.sh 2>&1 | tee /dev/stderr)
 
 # parse all the IDs out of the cluster up output
 vpcID=$(echo "$upout" | grep "VPC created" | sed -E 's/.*(vpc-.+$)/\1/')
@@ -26,9 +26,13 @@ sgID=$(echo "$upout" | grep "Security Group created" | sed -E 's/.*(sg-.+$)/\1/'
 # allow inbound ssh connections in the cluster's security group
 aws ec2 authorize-security-group-ingress --group-id "$sgID" --protocol tcp --port 22 --cidr 0.0.0.0/0
 
+serviceName="service-$(head -c150 /dev/urandom | tr -dc 'a-z' | head -c3)"
+echo "Composing service name $serviceName"
+
 cat << EOF > ./cluster.json
 {
-  "clusterName": "$NAME",
+  "clusterName": "$clusterName",
+  "serviceName": "$serviceName",
   "vpcID": "$vpcID",
   "sgID": "$sgID",
   "subnet1ID": "$subnet1ID",
@@ -38,13 +42,10 @@ EOF
 
 repoURI=$(cat ./repo.json | jq -r .repoURI)
 
-serviceID="$NAME-srvc-$(head -c150 /dev/urandom | tr -dc 'a-z' | head -c4)"
-echo "Composing service ID $serviceID"
-
 cat << EOF > ./docker-compose.yml
 version: '3'
 services:
-  $serviceID:
+  $serviceName:
     image: $repoURI:latest
     ports:
       - "80:80"
@@ -53,7 +54,7 @@ services:
       options:
         awslogs-group: auto-ecs-cluster
         awslogs-region: us-west-2
-        awslogs-stream-prefix: $NAME
+        awslogs-stream-prefix: $clusterName
 EOF
 
 cat << EOF > ecs-params.yml
@@ -75,11 +76,11 @@ run_params:
       assign_public_ip: DISABLED
 EOF
 
-ecs-cli compose --project-name "$NAME" service up --create-log-groups --cluster-config "$NAME"
+ecs-cli compose --project-name "$serviceName" service up --create-log-groups --cluster-config "$clusterName"
 sleep 5
 
-containerARN=$(aws ecs list-container-instances --cluster "$NAME" | jq -r '.containerInstanceArns[]')
-containerID=$(aws ecs describe-container-instances --cluster "$NAME" --container-instances "$containerARN" | jq -r '.containerInstances[].ec2InstanceId')
+containerARN=$(aws ecs list-container-instances --cluster "$clusterName" | jq -r '.containerInstanceArns[]')
+containerID=$(aws ecs describe-container-instances --cluster "$clusterName" --container-instances "$containerARN" | jq -r '.containerInstances[].ec2InstanceId')
 publicIP=$(aws ec2 describe-instances --instance-ids "$containerID" | jq -r '.Reservations[].Instances[].PublicIpAddress')
 
 echo "SSH to Your Container Instance: ssh ec2-user@$publicIP"
