@@ -24,9 +24,9 @@ subnet2ID=$(echo "$upout" | grep "Subnet created" | sed -E 's/.*(subnet-.+$)/\1/
 sgID=$(echo "$upout" | grep "Security Group created" | sed -E 's/.*(sg-.+$)/\1/')
 
 # allow inbound ssh connections in the cluster's security group
-aws ec2 authorize-security-group-ingress --group-id "$sgID" --protocol tcp --port 22 --cidr 0.0.0.0/0
+aws ec2 authorize-security-group-ingress --region "$region" --group-id "$sgID" --protocol tcp --port 22 --cidr 0.0.0.0/0
 
-serviceName="service-$(head -c150 /dev/urandom | tr -dc 'a-z' | head -c3)"
+serviceName="hello-world-service"
 echo "Composing service name $serviceName"
 
 cat << EOF > ./cluster.json
@@ -53,7 +53,7 @@ services:
       driver: awslogs
       options:
         awslogs-group: auto-ecs-cluster
-        awslogs-region: us-west-2
+        awslogs-region: $region
         awslogs-stream-prefix: $clusterName
 EOF
 
@@ -79,9 +79,9 @@ EOF
 ecs-cli compose --project-name "$serviceName" service up --create-log-groups --cluster-config "$clusterName"
 sleep 5
 
-containerARN=$(aws ecs list-container-instances --cluster "$clusterName" | jq -r '.containerInstanceArns[]')
-containerID=$(aws ecs describe-container-instances --cluster "$clusterName" --container-instances "$containerARN" | jq -r '.containerInstances[].ec2InstanceId')
-publicIP=$(aws ec2 describe-instances --instance-ids "$containerID" | jq -r '.Reservations[].Instances[].PublicIpAddress')
+containerARN=$(aws ecs list-container-instances --region "$region" --cluster "$clusterName" | jq -r '.containerInstanceArns[]')
+containerID=$(aws ecs describe-container-instances --region "$region" --cluster "$clusterName" --container-instances "$containerARN" | jq -r '.containerInstances[].ec2InstanceId')
+publicIP=$(aws ec2 describe-instances --region "$region" --instance-ids "$containerID" | jq -r '.Reservations[].Instances[].PublicIpAddress')
 
 echo "SSH to Your Container Instance: ssh ec2-user@$publicIP"
 
