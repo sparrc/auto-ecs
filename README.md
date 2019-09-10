@@ -7,7 +7,7 @@ scripts for auto-setup of an ECS cluster and agent workdir
 ```
 cat << EOF > ./config.json
 {
-  "ec2_container_instance_type": "t3.large",
+  "ec2_container_instance_type": "m5.large",
   "ec2_ssh_keypair_name": "dev-ec2",
   "aws_region": "us-west-2"
 }
