@@ -18,5 +18,8 @@ echo ECS_CLUSTER=$CLUSTERNAME >> /etc/ecs/ecs.config
 echo ECS_LOGLEVEL=warn >> /etc/ecs/ecs.config
 EOF
 
-aws ec2 run-instances --image-id "$AMIID" --iam-instance-profile Name=ecsInstanceRole --count 1 --instance-type "$INSTANCE_TYPE" --key-name dev-ec2 --user-data file:///tmp/user-data.sh --security-group-ids "$SGID" --subnet-id "$SUBNETID" --associate-public-ip-address
+cat ./user-data.sh >> /tmp/user-data.sh
+
+ID=$(head -c150 /dev/urandom | tr -dc 'A-Z' | head -c4)
+aws ec2 run-instances --image-id "$AMIID" --tag-specifications "ResourceType=instance,Tags=[{Key=Name,Value=$CLUSTERNAME-$ID}]" --iam-instance-profile Name=ecsInstanceRole --count 1 --instance-type "$INSTANCE_TYPE" --key-name dev-ec2 --user-data file:///tmp/user-data.sh --security-group-ids "$SGID" --subnet-id "$SUBNETID" --associate-public-ip-address
 
