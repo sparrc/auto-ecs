@@ -2,27 +2,13 @@
 
 cat << EOF >> /etc/ecs/ecs.config
 ECS_LOGLEVEL=warn
+ECS_LOG_ROLLOVER_TYPE=size
 EOF
 
 cat << EOF > /home/ec2-user/runtests.sh
 cd /home/ec2-user/go/src/github.com/aws/amazon-ecs-agent
 sudo systemctl stop ecs
-make test-registry
 make release
-docker tag amazon/amazon-ecs-agent:latest amazon/amazon-ecs-agent:make
-
-make test # unit tests
-make run-integ-tests
-# Setup functional tests
-# sudo sysctl -w net.ipv4.conf.all.route_localnet=1
-# sudo iptables -t nat -A PREROUTING -p tcp -d 169.254.170.2 --dport 80 -j DNAT --to-destination 127.0.0.1:51679
-# sudo iptables -t nat -A OUTPUT -d 169.254.170.2 -p tcp -m tcp --dport 80 -j REDIRECT --to-ports 51679
-# export TASK_IAM_ROLE_ARN="arn:aws:iam::039193556298:role/TaskIAMRoleArn"
-# export ECS_FTS_EXECUTION_ROLE="arn:aws:iam::039193556298:role/ecsTaskExecutionRole"
-# export AWS_SECRET_ACCESS_KEY="TODO"
-# export AWS_ACCESS_KEY_ID="TODO"
-# # Run functional tests -- note: your ec2 instance will need access to your personal AWS account for these tests
-# make run-functional-tests
 EOF
 
 cat << EOF > /home/ec2-user/.vimrc
@@ -37,16 +23,23 @@ EOF
 yum update -y
 yum install -y wget vim git jq aws-cli zsh gcc rsync
 
-# change default shell to zsh and write zshrc
 usermod --shell /bin/zsh ec2-user
 cat << \EOF > /home/ec2-user/.zshrc
 autoload -Uz compinit colors add-zsh-hook
-compinit -u     # autocomplete
-colors          # colors
-typeset -U PATH # no dupes in PATH
-# prompt format
+compinit -u
+colors
+typeset -U PATH
 PROMPT="CONTAINER INST %{$fg[blue]%}%4d%{$fg[green]%}%{$fg[red]%}%{$fg_bold[red]%} %# %{$reset_color%}"
-setopt APPEND_HISTORY SHARE_HISTORY BANG_HIST NO_BEEP INTERACTIVECOMMENTS NO_COMPLETE_ALIASES
+export HISTFILE=~/.zsh_history
+export HISTSIZE=7500
+export SAVEHIST=30000
+setopt HIST_IGNORE_DUPS
+setopt HIST_IGNORE_ALL_DUPS
+setopt HIST_REDUCE_BLANKS
+setopt HIST_SAVE_NO_DUPS
+setopt HIST_EXPIRE_DUPS_FIRST
+setopt SHARE_HISTORY
+setopt INC_APPEND_HISTORY
 # completion
 zstyle ':completion:*' menu select
 # oh-my-zsh style history completion
@@ -59,17 +52,14 @@ alias gs='git status --short'
 alias gu='git fetch --all --prune && git checkout master && git pull origin master --tags && git checkout -'
 EOF
 
-# install tig
 wget -O "/tmp/tig.rpm" "http://download-ib01.fedoraproject.org/pub/epel/7/x86_64/Packages/t/tig-2.4.0-1.el7.x86_64.rpm"
 yum install -y /tmp/tig.rpm
 
-# install go
 wget -O "/tmp/go.tar.gz" "https://dl.google.com/go/go1.12.4.linux-amd64.tar.gz"
 tar -C /usr/local -xzf /tmp/go.tar.gz
 echo export GOPATH="/home/ec2-user/go"  >> /home/ec2-user/.zshrc
 echo export PATH=$PATH:/usr/local/go/bin >> /home/ec2-user/.zshrc
 
-# clone amazon-ecs-agent
 mkdir -p /home/ec2-user/go/src/github.com/aws
 cd /home/ec2-user/go/src/github.com/aws
 git clone https://github.com/sparrc/amazon-ecs-agent.git
@@ -79,7 +69,6 @@ git config --global branch.autosetuprebase always
 git remote add upstream https://github.com/aws/amazon-ecs-agent.git
 git fetch --all
 
-# chown and chgrp any files/directories created with root ownership
 chown -R ec2-user /home/ec2-user
 chgrp -R ec2-user /home/ec2-user
 
