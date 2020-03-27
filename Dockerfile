@@ -1,5 +1,5 @@
 ############################################################
-# Dockerfile to build Nginx Installed Containers
+# Dockerfile to build
 # Based on Debian 9 (Stretch)
 ############################################################
 

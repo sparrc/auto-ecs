@@ -1,7 +1,7 @@
 #!/bin/bash
 
 cat << EOF >> /etc/ecs/ecs.config
-ECS_LOGLEVEL=warn
+ECS_LOGLEVEL=info
 ECS_LOG_ROLLOVER_TYPE=size
 EOF
 
@@ -20,7 +20,6 @@ au BufReadPost * if line("'\"") > 1 && line("'\"") <= line("$") | exe "normal! g
 set pastetoggle=<C-P>
 EOF
 
-yum update -y
 yum install -y wget vim git jq aws-cli zsh gcc rsync
 
 usermod --shell /bin/zsh ec2-user
