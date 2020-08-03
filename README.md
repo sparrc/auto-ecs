@@ -3,22 +3,24 @@ scripts for auto-setup of an ECS cluster and agent workdir
 
 ### Directions:
 
-1. Setup your config file:
+1. Setup your config file (ssh_keypairs is the name of your ssh keypair to use for the ecs container instance):
 ```
 cat << EOF > ./config.json
 {
-  "ec2_container_instance_type": "m5.large",
-  "ec2_ssh_keypair_name": "dev-ec2",
-  "aws_region": "us-west-2"
+  "ec2_container_instance_type": "m5.xlarge",
+  "ssh_keypairs": {
+    "us-east-1": "us-east-1",
+    "us-west-2": "dev-ec2"
+  }
 }
 EOF
 ```
-1. PRE-REQ: have an AWS account and be authorized to create resources. Install aws-cli, ecs-cli, and docker. Use docker to login to ecr (`aws ecr get-login --no-include-email`)
-1. Run create-ecr-repo.sh. This will build your docker image and push it to a repo in ECR. It will then create a file called `repo.json` that the next step needs.
-1. Run up.sh. This will create an ecs cluster and start an ecs service created from the files `docker-compose.yml` and `ecs-params.yml`. It will create a file called cluster.json with some data about the cluster.
-1. The previous command will print the public IP address of the 
+1. PRE-REQ: have an AWS account and be authorized to create resources. Install aws-cli, ecs-cli, and docker.
+1. Run up.sh. This will create an ecs cluster with one container instance registered. It creates a file in the clusters/ directory with some necessary metadata for adding instances and other operations.
+1. Create a task definition with something like the following command: `aws ecs register-task-definition --region us-west-2 --cli-input-json file://sampletask.json`
+1. Run runtask.sh to run a task, editing the task definition name as needed.
 
 ### Teardown:
-
+  
 1. Run `down.sh [CLUSTER_NAME]` to kill the service and teardown the ECS cluster stack. Cluster name is optional and if not passed will be gotten from the cluster.json file.
 

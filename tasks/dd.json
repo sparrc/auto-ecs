@@ -1,0 +1,22 @@
+{
+  "containerDefinitions": [
+    {
+      "name": "dd",
+      "image": "debian:stable-slim",
+      "cpu": 15,
+      "command": [
+        "dd",
+        "oflag=nocache",
+        "iflag=nocache",
+        "if=/dev/urandom",
+        "of=/dev/null",
+        "bs=256",
+        "count=100000000"
+      ],
+      "memory": 10,
+      "essential": true
+    }
+  ],
+  "volumes": [],
+  "family": "dd"
+}

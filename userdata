@@ -54,7 +54,7 @@ EOF
 wget -O "/tmp/tig.rpm" "http://download-ib01.fedoraproject.org/pub/epel/7/x86_64/Packages/t/tig-2.4.0-1.el7.x86_64.rpm"
 yum install -y /tmp/tig.rpm
 
-wget -O "/tmp/go.tar.gz" "https://dl.google.com/go/go1.12.4.linux-amd64.tar.gz"
+wget -O "/tmp/go.tar.gz" "https://dl.google.com/go/go1.14.3.linux-amd64.tar.gz"
 tar -C /usr/local -xzf /tmp/go.tar.gz
 echo export GOPATH="/home/ec2-user/go"  >> /home/ec2-user/.zshrc
 echo export PATH=$PATH:/usr/local/go/bin >> /home/ec2-user/.zshrc
