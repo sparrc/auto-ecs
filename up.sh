@@ -19,11 +19,10 @@ fi
 # configure the cluster
 ecs-cli configure --cluster "$clusterName" --config-name "$clusterName" --region "$region" --default-launch-type EC2
 
-instance=$(jq -r .ec2_container_instance_type < ./config.json)
 key=$(jq -r ".ssh_keypairs.\"$region\"" < config.json)
 
 # bring the cluster up
-upout=$(ecs-cli up --size 0 --cluster-config "$clusterName" --instance-role ecsInstanceRole --instance-type "$instance" --keypair "$key" --extra-user-data ./userdata 2>&1 | tee /dev/stderr)
+upout=$(ecs-cli up --size 0 --cluster-config "$clusterName" --instance-role ecsInstanceRole --keypair "$key" --extra-user-data ./userdata 2>&1 | tee /dev/stderr)
 
 # parse all the IDs out of the cluster up output
 vpcID=$(echo "$upout" | grep "VPC created" | sed -E 's/.*(vpc-.+$)/\1/')

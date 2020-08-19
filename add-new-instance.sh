@@ -7,13 +7,18 @@ if [[ "$CLUSTERNAME" == "" ]]; then
     exit 1
 fi
 
+INSTANCE_TYPE="${2:-}"
+if [[ "$INSTANCE_TYPE" == "" ]]; then
+    echo "No instance type specified, using m5.xlarge"
+    INSTANCE_TYPE="m5.xlarge"
+fi
+
 SGID=$(jq -r .sgID < "./clusters/$CLUSTERNAME.json")
 SUBNETID=$(jq -r .subnet1ID < "./clusters/$CLUSTERNAME.json")
 CLUSTERNAME=$(jq -r .clusterName < "./clusters/$CLUSTERNAME.json")
 REGION=$(jq -r .region < "./clusters/$CLUSTERNAME.json")
 
 SSH_KEY_NAME=$(jq -r ".ssh_keypairs.\"$REGION\"" < config.json)
-INSTANCE_TYPE=$(jq -r .ec2_container_instance_type < ./config.json)
 
 ## Linux AMI and userdata
 AMIID=$(aws ssm get-parameters --region "$REGION" --names /aws/service/ecs/optimized-ami/amazon-linux-2/recommended/image_id | jq -r ".Parameters[0].Value")
