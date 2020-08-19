@@ -15,9 +15,19 @@ REGION=$(jq -r .region < "./clusters/$CLUSTERNAME.json")
 SSH_KEY_NAME=$(jq -r ".ssh_keypairs.\"$REGION\"" < config.json)
 INSTANCE_TYPE=$(jq -r .ec2_container_instance_type < ./config.json)
 
-AMIID=$(aws ssm get-parameters --region "$REGION" --names /aws/service/ecs/optimized-ami/amazon-linux-2/recommended | jq -r ".Parameters[0].Value" | jq -r .image_id)
+## Linux AMI and userdata
+AMIID=$(aws ssm get-parameters --region "$REGION" --names /aws/service/ecs/optimized-ami/amazon-linux-2/recommended/image_id | jq -r ".Parameters[0].Value")
 
-# Windows userdata:
+cat << EOF > /tmp/userdata
+#!/bin/bash
+echo ECS_CLUSTER=$CLUSTERNAME >> /etc/ecs/ecs.config
+EOF
+cat ./userdata >> /tmp/userdata
+##
+
+## Windows AMI and userdata
+#AMIID=$(aws ssm get-parameters --names /aws/service/ami-windows-latest/Windows_Server-2019-English-Full-ECS_Optimized/image_id | jq -r ".Parameters[0].Value")
+#
 #cat << EOF > /tmp/userdata
 #<powershell>
 #[Environment]::SetEnvironmentVariable("ECS_ENABLE_SPOT_INSTANCE_DRAINING", "true", "Machine")
@@ -25,12 +35,7 @@ AMIID=$(aws ssm get-parameters --region "$REGION" --names /aws/service/ecs/optim
 #Initialize-ECSAgent -Cluster '$CLUSTERNAME' -EnableTaskIAMRole
 #</powershell>
 #EOF
-
-cat << EOF > /tmp/userdata
-#!/bin/bash
-echo ECS_CLUSTER=$CLUSTERNAME >> /etc/ecs/ecs.config
-EOF
-cat ./userdata >> /tmp/userdata
+##
 
 
 ID=$(head -c120 /dev/urandom | tr -dc 'a-z' | head -c3)

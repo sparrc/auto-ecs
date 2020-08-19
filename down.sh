@@ -7,6 +7,6 @@ if [[ "$CLUSTERNAME" == "" ]]; then
     exit 1
 fi
 
-rm "./clusters/$CLUSTERNAME.json"
 ecs-cli down --force --cluster-config "$CLUSTERNAME"
+rm "./clusters/$CLUSTERNAME.json"
 

@@ -1,14 +1,11 @@
 #!/bin/bash
 
+GITHUB_USERNAME="sparrc"
+GO_VERSION="1.15"
+
 cat << EOF >> /etc/ecs/ecs.config
 ECS_LOGLEVEL=info
 ECS_LOG_ROLLOVER_TYPE=size
-EOF
-
-cat << EOF > /home/ec2-user/runtests.sh
-cd /home/ec2-user/go/src/github.com/aws/amazon-ecs-agent
-sudo systemctl stop ecs
-make release
 EOF
 
 cat << EOF > /home/ec2-user/.vimrc
@@ -29,9 +26,6 @@ compinit -u
 colors
 typeset -U PATH
 PROMPT="CONTAINER INST %{$fg[blue]%}%4d%{$fg[green]%}%{$fg[red]%}%{$fg_bold[red]%} %# %{$reset_color%}"
-export HISTFILE=~/.zsh_history
-export HISTSIZE=7500
-export SAVEHIST=30000
 setopt HIST_IGNORE_DUPS
 setopt HIST_IGNORE_ALL_DUPS
 setopt HIST_REDUCE_BLANKS
@@ -49,19 +43,20 @@ alias gd='git diff'
 alias gc='git checkout'
 alias gs='git status --short'
 alias gu='git fetch --all --prune && git checkout master && git pull origin master --tags && git checkout -'
+export GOPATH=/home/ec2-user/go
+export PATH=$PATH:/usr/local/go/bin
+export AGENT=/home/ec2-user/go/src/github.com/aws/amazon-ecs-agent
 EOF
 
 wget -O "/tmp/tig.rpm" "http://download-ib01.fedoraproject.org/pub/epel/7/x86_64/Packages/t/tig-2.4.0-1.el7.x86_64.rpm"
 yum install -y /tmp/tig.rpm
 
-wget -O "/tmp/go.tar.gz" "https://dl.google.com/go/go1.14.3.linux-amd64.tar.gz"
+wget -O "/tmp/go.tar.gz" "https://dl.google.com/go/go$GO_VERSION.linux-amd64.tar.gz"
 tar -C /usr/local -xzf /tmp/go.tar.gz
-echo export GOPATH="/home/ec2-user/go"  >> /home/ec2-user/.zshrc
-echo export PATH=$PATH:/usr/local/go/bin >> /home/ec2-user/.zshrc
 
 mkdir -p /home/ec2-user/go/src/github.com/aws
 cd /home/ec2-user/go/src/github.com/aws
-git clone https://github.com/sparrc/amazon-ecs-agent.git
+git clone https://github.com/$GITHUB_USERNAME/amazon-ecs-agent.git
 cd amazon-ecs-agent
 git config --global pull.rebase true
 git config --global branch.autosetuprebase always
