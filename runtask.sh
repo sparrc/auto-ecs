@@ -7,6 +7,12 @@ if [[ "$CLUSTERNAME" == "" ]]; then
     exit 1
 fi
 
+TASKDEFINITION="${2:-}"
+if [[ "$TASKDEFINITION" == "" ]]; then
+    echo "You must specify a task definition to run"
+    exit 1
+fi
+
 SGID=$(jq -r .sgID < "./clusters/$CLUSTERNAME.json")
 SUBNETID_1=$(jq -r .subnet1ID < "./clusters/$CLUSTERNAME.json")
 SUBNETID_2=$(jq -r .subnet2ID < "./clusters/$CLUSTERNAME.json")
