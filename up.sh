@@ -9,7 +9,7 @@ if [[ "$region" == "" ]]; then
     exit 1
 fi
 
-clusterName="{2:-}"
+clusterName="${2:-}"
 if [[ "$clusterName" == "" ]]; then
     echo "No cluster name specified, creating a random one"
     tmp=$(head -c120 /dev/urandom | tr -dc 'a-z0-9' | head -c3)

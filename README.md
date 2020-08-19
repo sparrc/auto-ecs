@@ -3,7 +3,7 @@ scripts for auto-setup of an ECS cluster and agent workdir
 
 ### Directions:
 
-Pre-req: AWS access configured, awscli and ecscli installed
+Pre-req: AWS access configured, awscli, ecscli and jq installed
 
 ```bash
 # setup config file
