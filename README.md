@@ -27,5 +27,5 @@ aws ecs register-task-definition --region us-west-2 --cli-input-json file://samp
 
 ### Teardown:
   
-1. Run `down.sh CLUSTER_NAME` to kill the service and teardown the ECS cluster stack.
+1. Run `down.sh CLUSTER_NAME` terminate all instances in cluster and delete it's cloudformation stack.
 
