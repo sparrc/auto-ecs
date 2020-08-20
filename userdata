@@ -3,6 +3,11 @@
 GITHUB_USERNAME="sparrc"
 GO_VERSION="1.15"
 
+yum install -y wget git zsh
+yum install -y vim jq aws-cli gcc rsync &
+wget -O "/tmp/tig.rpm" "http://download-ib01.fedoraproject.org/pub/epel/7/x86_64/Packages/t/tig-2.4.0-1.el7.x86_64.rpm" && yum install -y /tmp/tig.rpm &
+wget -O "/tmp/go.tar.gz" "https://dl.google.com/go/go$GO_VERSION.linux-amd64.tar.gz" && tar -C /usr/local -xzf /tmp/go.tar.gz &
+
 cat << EOF >> /etc/ecs/ecs.config
 ECS_LOGLEVEL=info
 ECS_LOG_ROLLOVER_TYPE=size
@@ -17,7 +22,6 @@ au BufReadPost * if line("'\"") > 1 && line("'\"") <= line("$") | exe "normal! g
 set pastetoggle=<C-P>
 EOF
 
-yum install -y wget vim git jq aws-cli zsh gcc rsync
 
 usermod --shell /bin/zsh ec2-user
 cat << \EOF > /home/ec2-user/.zshrc
@@ -26,9 +30,8 @@ compinit -u
 colors
 typeset -U PATH
 PROMPT="CONTAINER INST %{$fg[blue]%}%4d%{$fg[green]%}%{$fg[red]%}%{$fg_bold[red]%} %# %{$reset_color%}"
-setopt HIST_IGNORE_DUPS HIST_IGNORE_ALL_DUPS HIST_REDUCE_BLANKS
-setopt HIST_SAVE_NO_DUPS HIST_EXPIRE_DUPS_FIRST
-setopt SHARE_HISTORY INC_APPEND_HISTORY
+setopt HIST_IGNORE_DUPS HIST_IGNORE_ALL_DUPS HIST_REDUCE_BLANKS HIST_SAVE_NO_DUPS
+setopt HIST_EXPIRE_DUPS_FIRST SHARE_HISTORY INC_APPEND_HISTORY
 # completion
 zstyle ':completion:*' menu select
 # oh-my-zsh style history completion
@@ -44,12 +47,6 @@ export PATH=$PATH:/usr/local/go/bin
 export AGENT=/home/ec2-user/go/src/github.com/aws/amazon-ecs-agent
 cd $AGENT
 EOF
-
-wget -O "/tmp/tig.rpm" "http://download-ib01.fedoraproject.org/pub/epel/7/x86_64/Packages/t/tig-2.4.0-1.el7.x86_64.rpm"
-yum install -y /tmp/tig.rpm
-
-wget -O "/tmp/go.tar.gz" "https://dl.google.com/go/go$GO_VERSION.linux-amd64.tar.gz"
-tar -C /usr/local -xzf /tmp/go.tar.gz
 
 mkdir -p /home/ec2-user/go/src/github.com/aws
 cd /home/ec2-user/go/src/github.com/aws

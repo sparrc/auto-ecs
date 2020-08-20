@@ -15,16 +15,16 @@ cat << EOF > ./config.json
 }
 EOF
 # create a cluster in us-west-2 (this will have no instances)
-./up.sh us-west-2 myCluster
+./create-cluster.sh us-west-2 myCluster
 # add an m5.2xlarge ec2 container instance to cluster (defaults to m5.xlarge)
-./add-new-instance.sh myCluster m5.2xlarge
+./add-instance-to-cluster.sh myCluster m5.2xlarge
 # register a task definition
 aws ecs register-task-definition --region us-west-2 --cli-input-json file://sampletask.json
 # run the task definition "dd" on cluster
-./runtask.sh myCluster dd
+./run-task.sh myCluster dd
 ```
 
 ### Teardown:
   
-1. Run `down.sh CLUSTER_NAME` terminate all instances in cluster and delete it's cloudformation stack.
+1. Run `delete-cluster.sh CLUSTER_NAME` terminate all instances in cluster and delete it's cloudformation stack.
 
