@@ -20,8 +20,8 @@ CLUSTERNAME=$(jq -r .clusterName < "./clusters/$CLUSTERNAME.json")
 REGION=$(jq -r .region < "./clusters/$CLUSTERNAME.json")
 
 aws ecs run-task --region "$REGION" --cluster "$CLUSTERNAME" \
-    --task-definition "dd" \
+    --task-definition "$TASKDEFINITION" \
     --started-by "$(whoami)-auto-ecs" \
-    --overrides '{"containerOverrides":[{"name":"dd","cpu":100}]}'
+    #--overrides '{"containerOverrides":[{"name":"dd","cpu":100}]}'
     #--network-configuration "awsvpcConfiguration={subnets=[$SUBNETID_2,$SUBNETID_1],securityGroups=[$SGID],assignPublicIp=DISABLED}" \
 
