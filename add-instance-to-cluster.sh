@@ -23,12 +23,11 @@ SSH_KEY_NAME=$(jq -r ".ssh_keypairs.\"$REGION\"" < config.json)
 ## Linux AMI and userdata
 AMIID=$(aws ssm get-parameters --region "$REGION" --names /aws/service/ecs/optimized-ami/amazon-linux-2/recommended/image_id | jq -r ".Parameters[0].Value")
 
-cat << EOF > /tmp/userdata
-#!/bin/bash
+# setup userdata
+cat ./userdata > /tmp/userdata
+cat << EOF >> /tmp/userdata
 echo ECS_CLUSTER=$CLUSTERNAME >> /etc/ecs/ecs.config
 EOF
-cat ./userdata >> /tmp/userdata
-##
 
 ## Windows AMI and userdata
 #AMIID=$(aws ssm get-parameters --names /aws/service/ami-windows-latest/Windows_Server-2019-English-Full-ECS_Optimized/image_id | jq -r ".Parameters[0].Value")
