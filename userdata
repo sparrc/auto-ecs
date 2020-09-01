@@ -7,6 +7,7 @@ yum install -y wget git zsh
 yum install -y vim jq aws-cli gcc rsync &
 wget -O "/tmp/tig.rpm" "http://download-ib01.fedoraproject.org/pub/epel/7/x86_64/Packages/t/tig-2.4.0-1.el7.x86_64.rpm" && yum install -y /tmp/tig.rpm &
 wget -O "/tmp/go.tar.gz" "https://dl.google.com/go/go$GO_VERSION.linux-amd64.tar.gz" && tar -C /usr/local -xzf /tmp/go.tar.gz &
+wget -O "/tmp/rg.rpm" "https://download.copr.fedorainfracloud.org/results/carlwgeorge/ripgrep/epel-7-x86_64/00930337-ripgrep/ripgrep-11.0.1-1.el7.x86_64.rpm" && yum -y install /tmp/rg.rpm &
 
 cat << EOF >> /etc/ecs/ecs.config
 ECS_LOGLEVEL=info
@@ -43,7 +44,7 @@ alias gc='git checkout'
 alias gs='git status --short'
 alias gu='git fetch --all --prune && git checkout master && git pull origin master --tags && git checkout -'
 export GOPATH=/home/ec2-user/go
-export PATH=$PATH:/usr/local/go/bin
+export PATH=$PATH:/usr/local/go/bin:$GOPATH/bin
 export AGENT=/home/ec2-user/go/src/github.com/aws/amazon-ecs-agent
 cd $AGENT
 EOF
