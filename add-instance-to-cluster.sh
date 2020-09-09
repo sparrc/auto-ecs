@@ -46,7 +46,7 @@ printf "Launching instance. name=$CLUSTERNAME-$ID amiID=$AMIID type=$INSTANCE_TY
 INSTANCE_ID=$(aws ec2 run-instances --instance-market-options "MarketType=spot,SpotOptions={SpotInstanceType=one-time}" --image-id "$AMIID" --tag-specifications "ResourceType=instance,Tags=[{Key=Name,Value=$CLUSTERNAME-$ID},{Key=Cluster,Value=$CLUSTERNAME}]" --iam-instance-profile Name=ecsInstanceRole --count 1 --instance-type "$INSTANCE_TYPE" --key-name "$SSH_KEY_NAME" --user-data file:///tmp/userdata --security-group-ids "$SGID" --subnet-id "$SUBNETID" --region "$REGION" --block-device-mapping "[{\"DeviceName\":\"/dev/xvda\",\"Ebs\":{\"VolumeSize\":100}}]" --associate-public-ip-address | jq -r ".Instances[0].InstanceId")
 
 printf " instanceID=$INSTANCE_ID"
-sleep 4
-PUBLIC_IP_ADDR=$(aws ec2 describe-instances --instance-ids "$INSTANCE_ID" | jq -r ".Reservations[0].Instances[0].PublicIpAddress")
+sleep 2
+PUBLIC_IP_ADDR=$(aws ec2 describe-instances --region "$REGION" --instance-ids "$INSTANCE_ID" | jq -r ".Reservations[0].Instances[0].PublicIpAddress")
 echo " publicIPAddress=$PUBLIC_IP_ADDR"
 

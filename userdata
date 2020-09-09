@@ -12,6 +12,7 @@ wget -O "/tmp/rg.rpm" "https://download.copr.fedorainfracloud.org/results/carlwg
 cat << EOF >> /etc/ecs/ecs.config
 ECS_LOGLEVEL=info
 ECS_LOG_ROLLOVER_TYPE=size
+ECS_ENABLE_SPOT_INSTANCE_DRAINING=true
 EOF
 
 cat << EOF > /home/ec2-user/.vimrc
