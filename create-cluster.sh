@@ -2,7 +2,7 @@
 set -eou pipefail
 
 region="${1:-}"
-if [[ "$region" == "" ]]; then
+if [ -z "$region" ]; then
     echo "you must specify a region to create the cluster"
     echo "Usage:"
     echo "  ./up.sh REGION [CLUSTERNAME]"
@@ -10,7 +10,7 @@ if [[ "$region" == "" ]]; then
 fi
 
 clusterName="${2:-}"
-if [[ "$clusterName" == "" ]]; then
+if [ -z "$clusterName" ]; then
     echo "No cluster name specified, creating a random one"
     tmp=$(head -c120 /dev/urandom | tr -dc 'a-z0-9' | head -c3)
     clusterName="$tmp"
@@ -22,7 +22,7 @@ ecs-cli configure --cluster "$clusterName" --config-name "$clusterName" --region
 key=$(jq -r ".ssh_keypairs.\"$region\"" < config.json)
 
 # bring the cluster up
-upout=$(ecs-cli up --size 0 --cluster-config "$clusterName" --instance-role ecsInstanceRole --keypair "$key" --extra-user-data ./userdata 2>&1 | tee /dev/stderr)
+upout=$(ecs-cli up --force --size 0 --cluster-config "$clusterName" --instance-role ecsInstanceRole --keypair "$key" --extra-user-data ./userdata 2>&1 | tee /dev/stderr)
 
 # parse all the IDs out of the cluster up output
 vpcID=$(echo "$upout" | grep "VPC created" | sed -E 's/.*(vpc-.+$)/\1/')
