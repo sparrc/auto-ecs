@@ -9,8 +9,8 @@ fi
 
 INSTANCE_TYPE="${2:-}"
 if [ -z "$INSTANCE_TYPE" ]; then
-    echo "No instance type specified, using m5.xlarge"
-    INSTANCE_TYPE="m5.xlarge"
+    echo "No instance type specified, using m5.large"
+    INSTANCE_TYPE="m5.large"
 fi
 
 SGID=$(jq -r .sgID < "./clusters/$CLUSTERNAME.json")
