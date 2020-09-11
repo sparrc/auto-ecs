@@ -35,6 +35,7 @@ aws ec2 authorize-security-group-ingress --region "$region" --group-id "$sgID" -
 # allow inbound windows RDP connections (this is used my windows remote desktop)
 aws ec2 authorize-security-group-ingress --region "$region" --group-id "$sgID" --protocol tcp --port 3389 --cidr 0.0.0.0/0
 
+mkdir -p ./clusters
 cat << EOF > "./clusters/$clusterName.json"
 {
   "clusterName": "$clusterName",

@@ -41,7 +41,7 @@ EOF
 #EOF
 ##
 
-ID=$(head -c120 /dev/urandom | tr -dc 'a-z' | head -c3)
+ID=$(python -c "import string; import random; print(''.join(random.choice(string.ascii_lowercase) for i in range(4)))")
 printf "Launching instance. name=$CLUSTERNAME-$ID amiID=$AMIID type=$INSTANCE_TYPE"
 INSTANCE_ID=$(aws ec2 run-instances --instance-market-options "MarketType=spot,SpotOptions={SpotInstanceType=one-time}" --image-id "$AMIID" --tag-specifications "ResourceType=instance,Tags=[{Key=Name,Value=$CLUSTERNAME-$ID},{Key=Cluster,Value=$CLUSTERNAME}]" --iam-instance-profile Name=ecsInstanceRole --count 1 --instance-type "$INSTANCE_TYPE" --key-name "$SSH_KEY_NAME" --user-data file:///tmp/userdata --security-group-ids "$SGID" --subnet-id "$SUBNETID" --region "$REGION" --block-device-mapping "[{\"DeviceName\":\"/dev/xvda\",\"Ebs\":{\"VolumeSize\":100}}]" --associate-public-ip-address | jq -r ".Instances[0].InstanceId")
 

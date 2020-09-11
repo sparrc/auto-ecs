@@ -1,15 +1,18 @@
 # auto-ecs
 scripts for auto-setup of an ECS cluster and agent workdir
 
-### Directions:
 
-Pre-reqs: 
+### Pre-reqs: 
+
 1. AWS access configured
-1. awscli, ecscli and jq installed
-1. ssh key imported to desired region(s), ie:
+2. awscli, ecs-cli and jq installed
+3. create an IAM role called ecsInstanceRole with the following policy attached: AmazonEC2ContainerServiceforEC2Role. see [here](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/instance_IAM_role.html) for more details on this role.
+4. ssh key imported to desired region(s), ie:
 ```
 aws ec2 import-key-pair --region us-west-2 --key-name "macbook" --public-key-material fileb://~/.ssh/id_rsa.pub
 ```
+
+### Directions:
 
 ```bash
 # setup config file with a mapping of regions to ssh keypair names:
