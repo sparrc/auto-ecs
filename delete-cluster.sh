@@ -12,7 +12,7 @@ if [ ! -f "./clusters/$CLUSTERNAME.json" ]; then
     exit 1
 fi
 
-REGION=$(jq -r .region < "./clusters/$CLUSTERNAME.json")
+REGION=$(jq -r .region <"./clusters/$CLUSTERNAME.json")
 
 # find all instances that are part of the cluster:
 for instanceID in $(aws ec2 describe-instances --region "$REGION" --filters "Name=tag:Cluster,Values=$CLUSTERNAME" | jq -r ".Reservations[].Instances[].InstanceId"); do
@@ -22,4 +22,3 @@ done
 
 ecs-cli down --force --cluster-config "$CLUSTERNAME"
 rm "./clusters/$CLUSTERNAME.json"
-

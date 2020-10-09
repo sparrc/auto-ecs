@@ -19,7 +19,7 @@ fi
 # configure the cluster
 ecs-cli configure --cluster "$clusterName" --config-name "$clusterName" --region "$region" --default-launch-type EC2
 
-key=$(jq -r ".ssh_keypairs.\"$region\"" < config.json)
+key=$(jq -r ".ssh_keypairs.\"$region\"" <config.json)
 
 # bring the cluster up
 upout=$(ecs-cli up --force --size 0 --cluster-config "$clusterName" --instance-role ecsInstanceRole --keypair "$key" --extra-user-data ./userdata 2>&1 | tee /dev/stderr)
@@ -36,7 +36,7 @@ aws ec2 authorize-security-group-ingress --region "$region" --group-id "$sgID" -
 aws ec2 authorize-security-group-ingress --region "$region" --group-id "$sgID" --protocol tcp --port 3389 --cidr 0.0.0.0/0
 
 mkdir -p ./clusters
-cat << EOF > "./clusters/$clusterName.json"
+cat <<EOF >"./clusters/$clusterName.json"
 {
   "clusterName": "$clusterName",
   "vpcID": "$vpcID",
@@ -46,4 +46,3 @@ cat << EOF > "./clusters/$clusterName.json"
   "region": "$region"
 }
 EOF
-

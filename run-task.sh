@@ -13,15 +13,14 @@ if [[ "$TASKDEFINITION" == "" ]]; then
     exit 1
 fi
 
-SGID=$(jq -r .sgID < "./clusters/$CLUSTERNAME.json")
-SUBNETID_1=$(jq -r .subnet1ID < "./clusters/$CLUSTERNAME.json")
-SUBNETID_2=$(jq -r .subnet2ID < "./clusters/$CLUSTERNAME.json")
-CLUSTERNAME=$(jq -r .clusterName < "./clusters/$CLUSTERNAME.json")
-REGION=$(jq -r .region < "./clusters/$CLUSTERNAME.json")
+SGID=$(jq -r .sgID <"./clusters/$CLUSTERNAME.json")
+SUBNETID_1=$(jq -r .subnet1ID <"./clusters/$CLUSTERNAME.json")
+SUBNETID_2=$(jq -r .subnet2ID <"./clusters/$CLUSTERNAME.json")
+CLUSTERNAME=$(jq -r .clusterName <"./clusters/$CLUSTERNAME.json")
+REGION=$(jq -r .region <"./clusters/$CLUSTERNAME.json")
 
 aws ecs run-task --region "$REGION" --cluster "$CLUSTERNAME" \
     --task-definition "$TASKDEFINITION" \
-    --started-by "$(whoami)-auto-ecs" \
-    #--overrides '{"containerOverrides":[{"name":"dd","cpu":100}]}'
-    #--network-configuration "awsvpcConfiguration={subnets=[$SUBNETID_2,$SUBNETID_1],securityGroups=[$SGID],assignPublicIp=DISABLED}" \
-
+    --started-by "$(whoami)-auto-ecs"
+#--overrides '{"containerOverrides":[{"name":"dd","cpu":100}]}'
+#--network-configuration "awsvpcConfiguration={subnets=[$SUBNETID_2,$SUBNETID_1],securityGroups=[$SGID],assignPublicIp=DISABLED}" \

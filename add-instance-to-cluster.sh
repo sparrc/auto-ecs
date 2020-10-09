@@ -13,19 +13,19 @@ if [ -z "$INSTANCE_TYPE" ]; then
     INSTANCE_TYPE="m5.large"
 fi
 
-SGID=$(jq -r .sgID < "./clusters/$CLUSTERNAME.json")
-SUBNETID=$(jq -r .subnet1ID < "./clusters/$CLUSTERNAME.json")
-CLUSTERNAME=$(jq -r .clusterName < "./clusters/$CLUSTERNAME.json")
-REGION=$(jq -r .region < "./clusters/$CLUSTERNAME.json")
+SGID=$(jq -r .sgID <"./clusters/$CLUSTERNAME.json")
+SUBNETID=$(jq -r .subnet1ID <"./clusters/$CLUSTERNAME.json")
+CLUSTERNAME=$(jq -r .clusterName <"./clusters/$CLUSTERNAME.json")
+REGION=$(jq -r .region <"./clusters/$CLUSTERNAME.json")
 
-SSH_KEY_NAME=$(jq -r ".ssh_keypairs.\"$REGION\"" < config.json)
+SSH_KEY_NAME=$(jq -r ".ssh_keypairs.\"$REGION\"" <config.json)
 
 ## Linux AMI and userdata
 AMIID=$(aws ssm get-parameters --region "$REGION" --names /aws/service/ecs/optimized-ami/amazon-linux-2/recommended/image_id | jq -r ".Parameters[0].Value")
 
 # setup userdata
-cat ./userdata > /tmp/userdata
-cat << EOF >> /tmp/userdata
+cat ./userdata >/tmp/userdata
+cat <<EOF >>/tmp/userdata
 echo ECS_CLUSTER=$CLUSTERNAME >> /etc/ecs/ecs.config
 EOF
 
@@ -49,4 +49,3 @@ printf " instanceID=$INSTANCE_ID"
 sleep 2
 PUBLIC_IP_ADDR=$(aws ec2 describe-instances --region "$REGION" --instance-ids "$INSTANCE_ID" | jq -r ".Reservations[0].Instances[0].PublicIpAddress")
 echo " publicIPAddress=$PUBLIC_IP_ADDR"
-
