@@ -43,6 +43,8 @@ alias gd='git diff'
 alias gc='git checkout'
 alias gs='git status --short'
 alias gu='git fetch --all --prune && git checkout master && git pull origin master --tags && git checkout -'
+alias ss='sudo systemctl'
+alias sj='sudo journalctl'
 export GOPATH=/home/ec2-user/go
 export PATH=$PATH:/usr/local/go/bin:$GOPATH/bin
 export AGENT=/home/ec2-user/go/src/github.com/aws/amazon-ecs-agent
@@ -53,6 +55,7 @@ mkdir -p /home/ec2-user/go/src/github.com/aws
 cd /home/ec2-user/go/src/github.com/aws
 git clone https://github.com/$GITHUB_USERNAME/amazon-ecs-agent.git
 cd amazon-ecs-agent
+git checkout --track origin/dev
 git config --global pull.rebase true
 git config --global branch.autosetuprebase always
 git remote add upstream https://github.com/aws/amazon-ecs-agent.git
