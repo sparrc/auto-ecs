@@ -23,9 +23,10 @@ SSH_KEY_NAME=$(jq -r ".ssh_keypairs.\"$REGION\"" <config.json)
 ## Amazon Linux 2 AMI
 AMIID=$(aws ssm get-parameters --region "$REGION" --names /aws/service/ecs/optimized-ami/amazon-linux-2/recommended/image_id | jq -r ".Parameters[0].Value")
 
+## AL2 GPU AMI
+#AMIID=$(aws ssm get-parameters --region "$REGION" --names /aws/service/ecs/optimized-ami/amazon-linux-2/gpu/recommended/image_id | jq -r ".Parameters[0].Value")
 ## Amazon Linux 1 AMI
 #AMIID=$(aws ssm get-parameters --region "$REGION" --names /aws/service/ecs/optimized-ami/amazon-linux/recommended/image_id | jq -r ".Parameters[0].Value")
-
 ## ARM AMI
 #AMIID=$(aws ssm get-parameters --region "$REGION" --names /aws/service/ecs/optimized-ami/amazon-linux-2/arm64/recommended/image_id | jq -r ".Parameters[0].Value")
 
@@ -47,9 +48,27 @@ EOF
 #EOF
 ##
 
+# get spot price
+price=$(aws ec2 describe-spot-price-history --instance-type "$INSTANCE_TYPE" --region "$REGION" --product-description "Linux/UNIX" --availability-zone "${REGION}a" | jq -r ".SpotPriceHistory[0].SpotPrice")
+bid=$(echo "$price * 1.5" | bc -l)
+echo "Spot price of instance $INSTANCE_TYPE is approximately \$$price/hour, bidding \$$bid/hour"
+
 ID=$(python -c "import string; import random; print(''.join(random.choice(string.ascii_lowercase) for i in range(4)))")
 printf "Launching instance. name=$CLUSTERNAME-$ID amiID=$AMIID type=$INSTANCE_TYPE"
-INSTANCE_ID=$(aws ec2 run-instances --instance-market-options "MarketType=spot,SpotOptions={SpotInstanceType=one-time}" --image-id "$AMIID" --tag-specifications "ResourceType=instance,Tags=[{Key=Name,Value=$CLUSTERNAME-$ID},{Key=Cluster,Value=$CLUSTERNAME}]" --iam-instance-profile Name=ecsInstanceRole --count 1 --instance-type "$INSTANCE_TYPE" --key-name "$SSH_KEY_NAME" --user-data file:///tmp/userdata --security-group-ids "$SGID" --subnet-id "$SUBNETID" --region "$REGION" --block-device-mapping "[{\"DeviceName\":\"/dev/xvda\",\"Ebs\":{\"VolumeSize\":100}}]" --associate-public-ip-address | jq -r ".Instances[0].InstanceId")
+INSTANCE_ID=$(aws ec2 run-instances \
+    --instance-market-options "MarketType=spot,SpotOptions={MaxPrice=$bid,SpotInstanceType=one-time}" \
+    --image-id "$AMIID" \
+    --tag-specifications "ResourceType=instance,Tags=[{Key=Name,Value=$CLUSTERNAME-$ID},{Key=Cluster,Value=$CLUSTERNAME}]" \
+    --iam-instance-profile Name=ecsInstanceRole \
+    --count 1 \
+    --instance-type "$INSTANCE_TYPE" \
+    --key-name "$SSH_KEY_NAME" \
+    --user-data file:///tmp/userdata \
+    --security-group-ids "$SGID" \
+    --subnet-id "$SUBNETID" \
+    --region "$REGION" \
+    --block-device-mapping "[{\"DeviceName\":\"/dev/xvda\",\"Ebs\":{\"VolumeSize\":100}}]" \
+    --associate-public-ip-address | jq -r ".Instances[0].InstanceId")
 
 printf " instanceID=$INSTANCE_ID"
 sleep 2
