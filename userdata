@@ -30,6 +30,10 @@ autoload -Uz compinit colors add-zsh-hook
 compinit -u
 colors
 typeset -U PATH
+instanceIp=$(curl --silent http://169.254.169.254/latest/meta-data/public-ipv4)
+instanceId=$(curl --silent http://169.254.169.254/latest/meta-data/instance-id)
+instanceType=$(curl --silent http://169.254.169.254/latest/meta-data/instance-type)
+echo "Metadata: instanceIP=$instanceIp instanceID=$instanceId instanceType=$instanceType"
 PROMPT="CONTAINER INST %{$fg[blue]%}%4d%{$fg[green]%}%{$fg[red]%}%{$fg_bold[red]%} %# %{$reset_color%}"
 export HISTFILE=~/.zsh_history
 export HISTSIZE=7500
