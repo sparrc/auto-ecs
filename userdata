@@ -1,13 +1,13 @@
 #!/bin/bash
 
 GITHUB_USERNAME="sparrc"
-GO_VERSION="1.15"
+GO_VERSION="1.15.5"
 
-yum install -y wget git zsh
-yum install -y vim jq aws-cli gcc rsync &
-wget -O "/tmp/tig.rpm" "http://download-ib01.fedoraproject.org/pub/epel/7/x86_64/Packages/t/tig-2.4.0-1.el7.x86_64.rpm" && yum install -y /tmp/tig.rpm &
-wget -O "/tmp/go.tar.gz" "https://dl.google.com/go/go$GO_VERSION.linux-amd64.tar.gz" && tar -C /usr/local -xzf /tmp/go.tar.gz &
-wget -O "/tmp/rg.rpm" "https://download.copr.fedorainfracloud.org/results/carlwgeorge/ripgrep/epel-7-x86_64/00930337-ripgrep/ripgrep-11.0.1-1.el7.x86_64.rpm" && yum -y install /tmp/rg.rpm &
+yum install -y git zsh
+yum install -y vim jq aws-cli gcc rsync wget &
+curl -o "/tmp/tig.rpm" "http://download-ib01.fedoraproject.org/pub/epel/7/x86_64/Packages/t/tig-2.4.0-1.el7.x86_64.rpm" && yum install -y /tmp/tig.rpm &
+curl -o "/tmp/go.tar.gz" "https://dl.google.com/go/go$GO_VERSION.linux-amd64.tar.gz" && tar -C /usr/local -xzf /tmp/go.tar.gz &
+curl -o "/tmp/rg.rpm" "https://download.copr.fedorainfracloud.org/results/carlwgeorge/ripgrep/epel-7-x86_64/00930337-ripgrep/ripgrep-11.0.1-1.el7.x86_64.rpm" && yum -y install /tmp/rg.rpm &
 
 cat <<EOF >>/etc/ecs/ecs.config
 ECS_LOGLEVEL=info
@@ -31,8 +31,16 @@ compinit -u
 colors
 typeset -U PATH
 PROMPT="CONTAINER INST %{$fg[blue]%}%4d%{$fg[green]%}%{$fg[red]%}%{$fg_bold[red]%} %# %{$reset_color%}"
-setopt HIST_IGNORE_DUPS HIST_IGNORE_ALL_DUPS HIST_REDUCE_BLANKS HIST_SAVE_NO_DUPS
-setopt HIST_EXPIRE_DUPS_FIRST SHARE_HISTORY INC_APPEND_HISTORY
+export HISTFILE=~/.zsh_history
+export HISTSIZE=7500
+export SAVEHIST=30000
+setopt HIST_IGNORE_DUPS
+setopt HIST_IGNORE_ALL_DUPS
+setopt HIST_REDUCE_BLANKS
+setopt HIST_SAVE_NO_DUPS
+setopt HIST_EXPIRE_DUPS_FIRST
+setopt SHARE_HISTORY
+setopt INC_APPEND_HISTORY
 # completion
 zstyle ':completion:*' menu select
 # oh-my-zsh style history completion
