@@ -20,15 +20,23 @@ REGION=$(jq -r .region <"./clusters/$CLUSTERNAME.json")
 
 SSH_KEY_NAME=$(jq -r ".ssh_keypairs.\"$REGION\"" <config.json)
 
-## Amazon Linux 2 AMI
-AMIID=$(aws ssm get-parameters --region "$REGION" --names /aws/service/ecs/optimized-ami/amazon-linux-2/recommended/image_id | jq -r ".Parameters[0].Value")
-
-## AL2 GPU AMI
-#AMIID=$(aws ssm get-parameters --region "$REGION" --names /aws/service/ecs/optimized-ami/amazon-linux-2/gpu/recommended/image_id | jq -r ".Parameters[0].Value")
-## Amazon Linux 1 AMI
-#AMIID=$(aws ssm get-parameters --region "$REGION" --names /aws/service/ecs/optimized-ami/amazon-linux/recommended/image_id | jq -r ".Parameters[0].Value")
-## ARM AMI
-#AMIID=$(aws ssm get-parameters --region "$REGION" --names /aws/service/ecs/optimized-ami/amazon-linux-2/arm64/recommended/image_id | jq -r ".Parameters[0].Value")
+AMIID=""
+TYPE_PREFIX="${INSTANCE_TYPE:0:3}"
+case $TYPE_PREFIX in
+a1. | m6g | c6g)
+    echo "ARM instance type detected"
+    AMIID=$(aws ssm get-parameters --region "$REGION" --names /aws/service/ecs/optimized-ami/amazon-linux-2/arm64/recommended/image_id | jq -r ".Parameters[0].Value")
+    ;;
+p2. | p3. | p4d | g4d | g3s | g3.)
+    echo "GPU instance type detected"
+    AMIID=$(aws ssm get-parameters --region "$REGION" --names /aws/service/ecs/optimized-ami/amazon-linux-2/gpu/recommended/image_id | jq -r ".Parameters[0].Value")
+    ;;
+*)
+    AMIID=$(aws ssm get-parameters --region "$REGION" --names /aws/service/ecs/optimized-ami/amazon-linux-2/recommended/image_id | jq -r ".Parameters[0].Value")
+    # AL1 AMI
+    #AMIID=$(aws ssm get-parameters --region "$REGION" --names /aws/service/ecs/optimized-ami/amazon-linux/recommended/image_id | jq -r ".Parameters[0].Value")
+    ;;
+esac
 
 # setup userdata
 cat ./userdata >/tmp/userdata
