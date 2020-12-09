@@ -18,8 +18,6 @@ SUBNETID=$(jq -r .subnet1ID <"./clusters/$CLUSTERNAME.json")
 CLUSTERNAME=$(jq -r .clusterName <"./clusters/$CLUSTERNAME.json")
 REGION=$(jq -r .region <"./clusters/$CLUSTERNAME.json")
 
-SSH_KEY_NAME=$(jq -r ".ssh_keypairs.\"$REGION\"" <config.json)
-
 AMIID=""
 TYPE_PREFIX="${INSTANCE_TYPE:0:3}"
 case $TYPE_PREFIX in
@@ -70,7 +68,7 @@ INSTANCE_ID=$(aws ec2 run-instances \
     --iam-instance-profile Name=ecsInstanceRole \
     --count 1 \
     --instance-type "$INSTANCE_TYPE" \
-    --key-name "$SSH_KEY_NAME" \
+    --key-name "auto-ecs" \
     --user-data file:///tmp/userdata \
     --security-group-ids "$SGID" \
     --subnet-id "$SUBNETID" \
