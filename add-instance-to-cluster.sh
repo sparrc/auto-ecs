@@ -21,7 +21,7 @@ REGION=$(jq -r .region <"./clusters/$CLUSTERNAME.json")
 AMIID=""
 TYPE_PREFIX="${INSTANCE_TYPE:0:3}"
 case $TYPE_PREFIX in
-a1. | m6g | c6g)
+a1. | m6g | c6g | r6g | t4g)
     echo "ARM instance type detected"
     AMIID=$(aws ssm get-parameters --region "$REGION" --names /aws/service/ecs/optimized-ami/amazon-linux-2/arm64/recommended/image_id | jq -r ".Parameters[0].Value")
     ;;
