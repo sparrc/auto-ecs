@@ -5,9 +5,15 @@ GO_VERSION="1.15.5"
 
 yum install -y git zsh
 yum install -y vim jq aws-cli gcc rsync wget &
-curl -o "/tmp/tig.rpm" "http://download-ib01.fedoraproject.org/pub/epel/7/x86_64/Packages/t/tig-2.4.0-1.el7.x86_64.rpm" && yum install -y /tmp/tig.rpm &
-curl -o "/tmp/go.tar.gz" "https://dl.google.com/go/go$GO_VERSION.linux-amd64.tar.gz" && tar -C /usr/local -xzf /tmp/go.tar.gz &
-curl -o "/tmp/rg.rpm" "https://download.copr.fedorainfracloud.org/results/carlwgeorge/ripgrep/epel-7-x86_64/00930337-ripgrep/ripgrep-11.0.1-1.el7.x86_64.rpm" && yum -y install /tmp/rg.rpm &
+ARCH=$(uname -m)
+GO_ARCH="amd64"
+if [[ "$ARCH" == "aarch64" ]]; then
+    GO_ARCH="arm64"
+else
+    curl -o "/tmp/rg.rpm" "https://download.copr.fedorainfracloud.org/results/carlwgeorge/ripgrep/epel-7-$ARCH/00930337-ripgrep/ripgrep-11.0.1-1.el7.$ARCH.rpm" && yum -y install /tmp/rg.rpm &
+fi
+curl -o "/tmp/tig.rpm" "http://download-ib01.fedoraproject.org/pub/epel/7/$ARCH/Packages/t/tig-2.4.0-1.el7.$ARCH.rpm" && yum install -y /tmp/tig.rpm &
+curl -o "/tmp/go.tar.gz" "https://dl.google.com/go/go$GO_VERSION.linux-$GO_ARCH.tar.gz" && tar -C /usr/local -xzf /tmp/go.tar.gz &
 
 cat <<EOF >>/etc/ecs/ecs.config
 ECS_LOGLEVEL=info
