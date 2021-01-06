@@ -1,21 +1,26 @@
 #!/bin/bash
 
+# replace DEFAULT_USER with default user of the platform
+USER="DEFAULT_USER"
 GITHUB_USERNAME="sparrc"
 GO_VERSION="1.15.5"
 
-yum install -y git zsh
-yum install -y vim jq aws-cli gcc rsync wget &
 ARCH=$(uname -m)
 GO_ARCH="amd64"
 if [[ "$ARCH" == "aarch64" ]]; then
     GO_ARCH="arm64"
-else
-    curl -o "/tmp/rg.rpm" "https://download.copr.fedorainfracloud.org/results/carlwgeorge/ripgrep/epel-7-$ARCH/00930337-ripgrep/ripgrep-11.0.1-1.el7.$ARCH.rpm" && yum -y install /tmp/rg.rpm &
 fi
-curl -o "/tmp/tig.rpm" "http://download-ib01.fedoraproject.org/pub/epel/7/$ARCH/Packages/t/tig-2.4.0-1.el7.$ARCH.rpm" && yum install -y /tmp/tig.rpm &
 curl -o "/tmp/go.tar.gz" "https://dl.google.com/go/go$GO_VERSION.linux-$GO_ARCH.tar.gz" && tar -C /usr/local -xzf /tmp/go.tar.gz &
 
-cat <<EOF >>/etc/ecs/ecs.config
+PKG_MANAGER="yum"
+if which apt; then
+    PKG_MANAGER="apt"
+elif which zypper; then
+    PKG_MANAGER="zypper"
+fi
+
+mkdir -p /etc/ecs
+cat <<EOF >/etc/ecs/ecs.config
 ECS_LOGLEVEL=info
 ECS_LOG_ROLLOVER_TYPE=size
 ECS_ENABLE_SPOT_INSTANCE_DRAINING=true
@@ -23,7 +28,8 @@ ECS_ENGINE_TASK_CLEANUP_WAIT_DURATION=5m
 ECS_LOG_MAX_FILE_SIZE_MB=3000
 EOF
 
-cat <<EOF >/home/ec2-user/.vimrc
+${PKG_MANAGER} install -y vim
+cat <<EOF >/home/$USER/.vimrc
 set number mouse=a colorcolumn=80 smartindent tabstop=4 laststatus=2 nocompatible
 hi Comment ctermfg=darkgray
 " Remember location in file
@@ -32,8 +38,9 @@ au BufReadPost * if line("'\"") > 1 && line("'\"") <= line("$") | exe "normal! g
 set pastetoggle=<C-P>
 EOF
 
-usermod --shell /bin/zsh ec2-user
-cat <<\EOF >/home/ec2-user/.zshrc
+${PKG_MANAGER} install -y zsh
+chsh --shell /bin/zsh $USER
+cat <<\EOF >/home/$USER/.zshrc
 autoload -Uz compinit colors add-zsh-hook
 compinit -u
 colors
@@ -42,7 +49,8 @@ instanceIp=$(curl --silent http://169.254.169.254/latest/meta-data/public-ipv4)
 instanceId=$(curl --silent http://169.254.169.254/latest/meta-data/instance-id)
 instanceType=$(curl --silent http://169.254.169.254/latest/meta-data/instance-type)
 echo "Metadata: instanceIP=$instanceIp instanceID=$instanceId instanceType=$instanceType"
-PROMPT="CONTAINER INST %{$fg[blue]%}%4d%{$fg[green]%}%{$fg[red]%}%{$fg_bold[red]%} %# %{$reset_color%}"
+source /etc/os-release
+PROMPT="ANYWHERE INST ($NAME) %{$fg[blue]%}%4d%{$fg[green]%}%{$fg[red]%}%{$fg_bold[red]%} %# %{$reset_color%}"
 export HISTFILE=~/.zsh_history
 export HISTSIZE=7500
 export SAVEHIST=30000
@@ -65,27 +73,9 @@ alias gs='git status --short'
 alias gu='git fetch --all --prune && git checkout master && git pull origin master --tags && git checkout -'
 alias ss='sudo systemctl'
 alias sj='sudo journalctl'
-export GOPATH=/home/ec2-user/go
+export GOPATH=$HOME/go
 export PATH=$PATH:/usr/local/go/bin:$GOPATH/bin
-export AGENT=/home/ec2-user/go/src/github.com/aws/amazon-ecs-agent
+export AGENT=$HOME/go/src/github.com/aws/amazon-ecs-agent
 cd $AGENT
 EOF
 
-mkdir -p /home/ec2-user/go/src/github.com/aws
-cd /home/ec2-user/go/src/github.com/aws
-git clone https://github.com/$GITHUB_USERNAME/amazon-ecs-agent.git
-cd amazon-ecs-agent
-git checkout --track origin/dev
-git config --global pull.rebase true
-git config --global branch.autosetuprebase always
-git remote add upstream https://github.com/aws/amazon-ecs-agent.git
-git fetch --all
-
-cd /home/ec2-user/go/src/github.com/aws
-git clone https://github.com/$GITHUB_USERNAME/amazon-ecs-init.git
-cd amazon-ecs-init
-git remote add upstream https://github.com/aws/amazon-ecs-init.git
-git fetch --all
-
-chown -R ec2-user /home/ec2-user
-chgrp -R ec2-user /home/ec2-user

@@ -1,0 +1,117 @@
+#!/bin/bash
+set -eou pipefail
+
+CLUSTERNAME="${1:-}"
+if [ -z "$CLUSTERNAME" ]; then
+    echo "You must specify a cluster to add the instance to"
+    exit 1
+fi
+
+INSTANCE_TYPE="${2:-}"
+if [ -z "$INSTANCE_TYPE" ]; then
+    echo "You must specify instance type"
+    exit 1
+fi
+
+OS="${3:-}"
+if [ -z "$OS" ]; then
+    echo "You must specify OS"
+    exit 1
+fi
+
+SGID=$(jq -r .sgID <"./clusters/$CLUSTERNAME.json")
+SUBNETID=$(jq -r .subnet1ID <"./clusters/$CLUSTERNAME.json")
+CLUSTERNAME=$(jq -r .clusterName <"./clusters/$CLUSTERNAME.json")
+REGION=$(jq -r .region <"./clusters/$CLUSTERNAME.json")
+
+AMIID=""
+DEFAULT_USER="ec2-user"
+TYPE_PREFIX="${INSTANCE_TYPE:0:3}"
+case $TYPE_PREFIX in
+a1. | m6g | c6g | r6g | t4g)
+    echo "ARM instance type detected"
+    case $OS in
+    ubuntu)
+        AMIID=$(aws ssm get-parameters --names "/aws/service/canonical/ubuntu/server/20.04/stable/current/arm64/hvm/ebs-gp2/ami-id" --query 'Parameters[0].Value' --output text)
+        DEFAULT_USER="ubuntu"
+        ;;
+    debian)
+        AMIID=$(aws ec2 describe-images --owners 136693071363 --filters "Name=state,Values=available" "Name=name,Values=debian-10-arm64-*" --query "reverse(sort_by(Images, &CreationDate))[:1].ImageId" --output text)
+        DEFAULT_USER="admin"
+        ;;
+    centos)
+        AMIID=$(aws ec2 describe-images --owners 125523088429 --filters "Name=state,Values=available" "Name=name,Values=CentOS 8*" "Name=architecture,Values=arm64" --query "reverse(sort_by(Images, &CreationDate))[:1].ImageId" --output text)
+        DEFAULT_USER="centos"
+        ;;
+    sles)
+        AMIID=$(aws ec2 describe-images --owners 013907871322 --filters "Name=state,Values=available" "Name=name,Values=suse-sles-15-sp2-v*" "Name=architecture,Values=arm64" --query "reverse(sort_by(Images, &CreationDate))[:1].ImageId" --output text)
+        ;;
+    esac
+    ;;
+p2. | p3. | p4d | g4d | g3s | g3.)
+    echo "GPU instance type detected"
+    echo "GPU not supported"
+    exit 1
+    ;;
+inf)
+    echo "INF instance type detected"
+    echo "INF not supported"
+    exit 1
+    ;;
+*)
+    case $OS in
+    ubuntu)
+        AMIID=$(aws ssm get-parameters --names "/aws/service/canonical/ubuntu/server/20.04/stable/current/amd64/hvm/ebs-gp2/ami-id" --query 'Parameters[0].Value' --output text)
+        DEFAULT_USER="ubuntu"
+        ;;
+    debian)
+        AMIID=$(aws ec2 describe-images --owners 136693071363 --filters "Name=state,Values=available" "Name=name,Values=debian-10-amd64-*" --query "reverse(sort_by(Images, &CreationDate))[:1].ImageId" --output text)
+        DEFAULT_USER="admin"
+        ;;
+    centos)
+        AMIID=$(aws ec2 describe-images --owners 125523088429 --filters "Name=state,Values=available" "Name=name,Values=CentOS 8*" "Name=architecture,Values=amd64" --query "reverse(sort_by(Images, &CreationDate))[:1].ImageId" --output text)
+        DEFAULT_USER="centos"
+        ;;
+    al2)
+        AMIID=$(aws ssm get-parameters --region "$REGION" --names /aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2 | jq '.Parameters[0].Value' -r)
+        ;;
+    sles)
+        AMIID=$(aws ec2 describe-images --owners 013907871322 --filters "Name=state,Values=available" "Name=name,Values=suse-sles-15-sp2-v*" "Name=architecture,Values=x86_64" --query "reverse(sort_by(Images, &CreationDate))[:1].ImageId" --output text)
+        ;;
+    esac
+    ;;
+esac
+
+echo "Using AMI ID: $AMIID"
+
+# setup userdata
+cat ./anywhere-userdata | sed "s/DEFAULT_USER/$DEFAULT_USER/g" >/tmp/userdata
+cat <<EOF >>/tmp/userdata
+echo ECS_CLUSTER=$CLUSTERNAME >> /etc/ecs/ecs.config
+EOF
+
+# get spot price
+price=$(aws ec2 describe-spot-price-history --instance-type "$INSTANCE_TYPE" --region "$REGION" --product-description "Linux/UNIX" --availability-zone "${REGION}a" | jq -r ".SpotPriceHistory[0].SpotPrice")
+bid=$(echo "$price * 2" | bc -l)
+echo "Spot price of instance $INSTANCE_TYPE is approximately \$$price/hour, bidding \$$bid/hour"
+
+ID=$(python -c "import string; import random; print(''.join(random.choice(string.ascii_lowercase) for i in range(4)))")
+printf "Launching instance. name=$CLUSTERNAME-$ID amiID=$AMIID type=$INSTANCE_TYPE"
+INSTANCE_ID=$(aws ec2 run-instances \
+    --image-id "$AMIID" \
+    --instance-market-options "MarketType=spot,SpotOptions={MaxPrice=$bid,SpotInstanceType=one-time}" \
+    --tag-specifications "ResourceType=instance,Tags=[{Key=Name,Value=$CLUSTERNAME-$ID},{Key=Cluster,Value=$CLUSTERNAME}]" \
+    --count 1 \
+    --instance-type "$INSTANCE_TYPE" \
+    --key-name "auto-ecs" \
+    --user-data file:///tmp/userdata \
+    --security-group-ids "$SGID" \
+    --subnet-id "$SUBNETID" \
+    --region "$REGION" \
+    --block-device-mapping "[{\"DeviceName\":\"/dev/xvda\",\"Ebs\":{\"VolumeSize\":100}}]" \
+    --associate-public-ip-address | jq -r ".Instances[0].InstanceId")
+
+printf " instanceID=$INSTANCE_ID"
+sleep 2
+PUBLIC_IP_ADDR=$(aws ec2 describe-instances --region "$REGION" --instance-ids "$INSTANCE_ID" | jq -r ".Reservations[0].Instances[0].PublicIpAddress")
+echo " publicIPAddress=$DEFAULT_USER@$PUBLIC_IP_ADDR"

@@ -13,37 +13,50 @@ if [ -z "$INSTANCE_TYPE" ]; then
     INSTANCE_TYPE="m5.large"
 fi
 
+# other options:
+#   9
+DEBIAN_VERSION="${3:-10}"
+echo "Using debian version: $DEBIAN_VERSION"
+
 SGID=$(jq -r .sgID <"./clusters/$CLUSTERNAME.json")
 SUBNETID=$(jq -r .subnet1ID <"./clusters/$CLUSTERNAME.json")
 CLUSTERNAME=$(jq -r .clusterName <"./clusters/$CLUSTERNAME.json")
 REGION=$(jq -r .region <"./clusters/$CLUSTERNAME.json")
 
 AMIID=""
+ROOT_DEVICE=""
 TYPE_PREFIX="${INSTANCE_TYPE:0:3}"
 case $TYPE_PREFIX in
 a1. | m6g | c6g | r6g | t4g)
     echo "ARM instance type detected"
-    AMIID=$(aws ssm get-parameters --region "$REGION" --names /aws/service/ecs/optimized-ami/amazon-linux-2/arm64/recommended/image_id | jq -r ".Parameters[0].Value")
+    if [[ "$DEBIAN_VERSION" == "10" ]]; then
+        AMIID=$(aws ec2 describe-images --owners 136693071363 --filters "Name=state,Values=available" "Name=name,Values=debian-10-arm64-*" --query "reverse(sort_by(Images, &CreationDate))[:1].ImageId" --output text)
+        ROOT_DEVICE=$(aws ec2 describe-images --owners 136693071363 --filters "Name=state,Values=available" "Name=name,Values=debian-10-arm64-*" --query "reverse(sort_by(Images, &CreationDate))[:1].RootDeviceName" --output text)
+    else
+        AMIID=$(aws ec2 describe-images --owners 379101102735 --filters "Name=state,Values=available" "Name=name,Values=debian-stretch-hvm-arm64*" --query "reverse(sort_by(Images, &CreationDate))[:1].ImageId" --output text)
+        ROOT_DEVICE=$(aws ec2 describe-images --owners 379101102735 --filters "Name=state,Values=available" "Name=name,Values=debian-stretch-hvm-arm64*" --query "reverse(sort_by(Images, &CreationDate))[:1].RootDeviceName" --output text)
+    fi
     ;;
 p2. | p3. | p4d | g4d | g3s | g3.)
     echo "GPU instance type detected"
-    AMIID=$(aws ssm get-parameters --region "$REGION" --names /aws/service/ecs/optimized-ami/amazon-linux-2/gpu/recommended/image_id | jq -r ".Parameters[0].Value")
-    ;;
-inf)
-    echo "INF instance type detected"
-    AMIID=$(aws ssm get-parameters --region "$REGION" --names /aws/service/ecs/optimized-ami/amazon-linux-2/inf/recommended/image_id | jq -r ".Parameters[0].Value")
+    exit 1
     ;;
 *)
-    AMIID=$(aws ssm get-parameters --region "$REGION" --names /aws/service/ecs/optimized-ami/amazon-linux-2/recommended/image_id | jq -r ".Parameters[0].Value")
-    # AL1 AMI
-    #AMIID=$(aws ssm get-parameters --region "$REGION" --names /aws/service/ecs/optimized-ami/amazon-linux/recommended/image_id | jq -r ".Parameters[0].Value")
+    if [[ "$DEBIAN_VERSION" == "10" ]]; then
+        AMIID=$(aws ec2 describe-images --owners 136693071363 --filters "Name=state,Values=available" "Name=name,Values=debian-10-amd64-*" --query "reverse(sort_by(Images, &CreationDate))[:1].ImageId" --output text)
+        ROOT_DEVICE=$(aws ec2 describe-images --owners 136693071363 --filters "Name=state,Values=available" "Name=name,Values=debian-10-amd64-*" --query "reverse(sort_by(Images, &CreationDate))[:1].RootDeviceName" --output text)
+    else
+        AMIID=$(aws ec2 describe-images --owners 379101102735 --filters "Name=state,Values=available" "Name=name,Values=debian-stretch-hvm-x86_64*" --query "reverse(sort_by(Images, &CreationDate))[:1].ImageId" --output text)
+        ROOT_DEVICE=$(aws ec2 describe-images --owners 379101102735 --filters "Name=state,Values=available" "Name=name,Values=debian-stretch-hvm-x86_64*" --query "reverse(sort_by(Images, &CreationDate))[:1].RootDeviceName" --output text)
+    fi
     ;;
 esac
 
 # setup userdata
-cat ./userdata >/tmp/userdata
+cat ./userdata-debian >/tmp/userdata
 cat <<EOF >>/tmp/userdata
 echo ECS_CLUSTER=$CLUSTERNAME >> /etc/ecs/ecs.config
+systemctl start ecs
 EOF
 
 # get spot price
@@ -65,7 +78,7 @@ INSTANCE_ID=$(aws ec2 run-instances \
     --security-group-ids "$SGID" \
     --subnet-id "$SUBNETID" \
     --region "$REGION" \
-    --block-device-mapping "[{\"DeviceName\":\"/dev/xvda\",\"Ebs\":{\"VolumeSize\":100}}]" \
+    --block-device-mapping "[{\"DeviceName\":\"${ROOT_DEVICE}\",\"Ebs\":{\"VolumeSize\":100}}]" \
     --associate-public-ip-address | jq -r ".Instances[0].InstanceId")
 
 printf " instanceID=$INSTANCE_ID"
