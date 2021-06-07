@@ -38,8 +38,7 @@ au BufReadPost * if line("'\"") > 1 && line("'\"") <= line("$") | exe "normal! g
 set pastetoggle=<C-P>
 EOF
 
-${PKG_MANAGER} install -y zsh
-chsh --shell /bin/zsh $USER
+${PKG_MANAGER} install -y zsh && usermod --shell /bin/zsh $USER
 cat <<\EOF >/home/$USER/.zshrc
 autoload -Uz compinit colors add-zsh-hook
 compinit -u

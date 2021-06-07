@@ -43,6 +43,9 @@ a1. | m6g | c6g | r6g | t4g)
         AMIID=$(aws ec2 describe-images --owners 125523088429 --filters "Name=state,Values=available" "Name=name,Values=CentOS 8*" "Name=architecture,Values=arm64" --query "reverse(sort_by(Images, &CreationDate))[:1].ImageId" --output text)
         DEFAULT_USER="centos"
         ;;
+    al2)
+        AMIID=$(aws ssm get-parameters --region "$REGION" --names /aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-arm64-gp2 | jq '.Parameters[0].Value' -r)
+        ;;
     sles)
         AMIID=$(aws ec2 describe-images --owners 013907871322 --filters "Name=state,Values=available" "Name=name,Values=suse-sles-15-sp2-v*" "Name=architecture,Values=arm64" --query "reverse(sort_by(Images, &CreationDate))[:1].ImageId" --output text)
         ;;
@@ -69,7 +72,7 @@ inf)
         DEFAULT_USER="admin"
         ;;
     centos)
-        AMIID=$(aws ec2 describe-images --owners 125523088429 --filters "Name=state,Values=available" "Name=name,Values=CentOS 8*" "Name=architecture,Values=amd64" --query "reverse(sort_by(Images, &CreationDate))[:1].ImageId" --output text)
+        AMIID=$(aws ec2 describe-images --owners 125523088429 --filters "Name=state,Values=available" "Name=name,Values=CentOS 8*" "Name=architecture,Values=x86_64" --query "reverse(sort_by(Images, &CreationDate))[:1].ImageId" --output text)
         DEFAULT_USER="centos"
         ;;
     al2)
@@ -90,6 +93,9 @@ cat <<EOF >>/tmp/userdata
 echo ECS_CLUSTER=$CLUSTERNAME >> /etc/ecs/ecs.config
 EOF
 
+# get root device name
+ROOT_DEVICE_NAME=$(aws ec2 describe-images --image-ids "$AMIID" --query 'Images[0].RootDeviceName' --output text)
+
 # get spot price
 price=$(aws ec2 describe-spot-price-history --instance-type "$INSTANCE_TYPE" --region "$REGION" --product-description "Linux/UNIX" --availability-zone "${REGION}a" | jq -r ".SpotPriceHistory[0].SpotPrice")
 bid=$(echo "$price * 2" | bc -l)
@@ -108,7 +114,7 @@ INSTANCE_ID=$(aws ec2 run-instances \
     --security-group-ids "$SGID" \
     --subnet-id "$SUBNETID" \
     --region "$REGION" \
-    --block-device-mapping "[{\"DeviceName\":\"/dev/xvda\",\"Ebs\":{\"VolumeSize\":100}}]" \
+    --block-device-mapping "[{\"DeviceName\":\"${ROOT_DEVICE_NAME}\",\"Ebs\":{\"VolumeSize\":100}}]" \
     --associate-public-ip-address | jq -r ".Instances[0].InstanceId")
 
 printf " instanceID=$INSTANCE_ID"
