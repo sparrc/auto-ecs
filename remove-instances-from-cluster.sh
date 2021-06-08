@@ -15,7 +15,7 @@ fi
 REGION=$(jq -r .region <"./clusters/$CLUSTERNAME.json")
 
 # find all instances that are part of the cluster:
-for instanceID in $(aws ec2 describe-instances --region "$REGION" --filters "Name=tag:Cluster,Values=$CLUSTERNAME" "Name=instance-state-name,Values=running" | jq -r ".Reservations[].Instances[].InstanceId"); do
+for instanceID in $(aws ec2 describe-instances --region "$REGION" --filters "Name=tag:Cluster,Values=$CLUSTERNAME" "Name=instance-state-name,Values=running" --query "Reservations[].Instances[].InstanceId" --output text); do
     echo "Terminating $instanceID"
     aws ec2 terminate-instances --region "$REGION" --instance-ids $instanceID | jq .
 done
