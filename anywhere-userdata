@@ -74,7 +74,5 @@ alias ss='sudo systemctl'
 alias sj='sudo journalctl'
 export GOPATH=$HOME/go
 export PATH=$PATH:/usr/local/go/bin:$GOPATH/bin
-export AGENT=$HOME/go/src/github.com/aws/amazon-ecs-agent
-cd $AGENT
 EOF
 

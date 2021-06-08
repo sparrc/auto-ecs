@@ -23,18 +23,18 @@ TYPE_PREFIX="${INSTANCE_TYPE:0:3}"
 case $TYPE_PREFIX in
 a1. | m6g | c6g | r6g | t4g)
     echo "ARM instance type detected"
-    AMIID=$(aws ssm get-parameters --region "$REGION" --names /aws/service/ecs/optimized-ami/amazon-linux-2/arm64/recommended/image_id | jq -r ".Parameters[0].Value")
+    AMIID=$(aws ssm get-parameters --region "$REGION" --names /aws/service/ecs/optimized-ami/amazon-linux-2/arm64/recommended/image_id --query "Parameters[0].Value" --output text)
     ;;
 p2. | p3. | p4d | g4d | g3s | g3.)
     echo "GPU instance type detected"
-    AMIID=$(aws ssm get-parameters --region "$REGION" --names /aws/service/ecs/optimized-ami/amazon-linux-2/gpu/recommended/image_id | jq -r ".Parameters[0].Value")
+    AMIID=$(aws ssm get-parameters --region "$REGION" --names /aws/service/ecs/optimized-ami/amazon-linux-2/gpu/recommended/image_id --query "Parameters[0].Value" --output text)
     ;;
 inf)
     echo "INF instance type detected"
-    AMIID=$(aws ssm get-parameters --region "$REGION" --names /aws/service/ecs/optimized-ami/amazon-linux-2/inf/recommended/image_id | jq -r ".Parameters[0].Value")
+    AMIID=$(aws ssm get-parameters --region "$REGION" --names /aws/service/ecs/optimized-ami/amazon-linux-2/inf/recommended/image_id --query "Parameters[0].Value" --output text)
     ;;
 *)
-    AMIID=$(aws ssm get-parameters --region "$REGION" --names /aws/service/ecs/optimized-ami/amazon-linux-2/recommended/image_id | jq -r ".Parameters[0].Value")
+    AMIID=$(aws ssm get-parameters --region "$REGION" --names /aws/service/ecs/optimized-ami/amazon-linux-2/recommended/image_id --query "Parameters[0].Value" --output text)
     # AL1 AMI
     #AMIID=$(aws ssm get-parameters --region "$REGION" --names /aws/service/ecs/optimized-ami/amazon-linux/recommended/image_id | jq -r ".Parameters[0].Value")
     ;;
@@ -46,8 +46,11 @@ cat <<EOF >>/tmp/userdata
 echo ECS_CLUSTER=$CLUSTERNAME >> /etc/ecs/ecs.config
 EOF
 
+# get root device name
+ROOT_DEVICE_NAME=$(aws ec2 describe-images --image-ids "$AMIID" --query "Images[0].RootDeviceName" --output text)
+
 # get spot price
-price=$(aws ec2 describe-spot-price-history --instance-type "$INSTANCE_TYPE" --region "$REGION" --product-description "Linux/UNIX" --availability-zone "${REGION}a" | jq -r ".SpotPriceHistory[0].SpotPrice")
+price=$(aws ec2 describe-spot-price-history --instance-type "$INSTANCE_TYPE" --region "$REGION" --product-description "Linux/UNIX" --availability-zone "${REGION}a" --query "SpotPriceHistory[0].SpotPrice" --output text)
 bid=$(echo "$price * 2" | bc -l)
 echo "Spot price of instance $INSTANCE_TYPE is approximately \$$price/hour, bidding \$$bid/hour"
 
@@ -65,10 +68,11 @@ INSTANCE_ID=$(aws ec2 run-instances \
     --security-group-ids "$SGID" \
     --subnet-id "$SUBNETID" \
     --region "$REGION" \
-    --block-device-mapping "[{\"DeviceName\":\"/dev/xvda\",\"Ebs\":{\"VolumeSize\":100}}]" \
-    --associate-public-ip-address | jq -r ".Instances[0].InstanceId")
+    --block-device-mapping "[{\"DeviceName\":\"${ROOT_DEVICE_NAME}\",\"Ebs\":{\"VolumeSize\":100}}]" \
+    --associate-public-ip-address \
+    --query "Instances[0].InstanceId" --output text)
 
 printf " instanceID=$INSTANCE_ID"
 sleep 2
-PUBLIC_IP_ADDR=$(aws ec2 describe-instances --region "$REGION" --instance-ids "$INSTANCE_ID" | jq -r ".Reservations[0].Instances[0].PublicIpAddress")
+PUBLIC_IP_ADDR=$(aws ec2 describe-instances --region "$REGION" --instance-ids "$INSTANCE_ID" --query "Reservations[0].Instances[0].PublicIpAddress" --output text)
 echo " publicIPAddress=$PUBLIC_IP_ADDR"

@@ -32,7 +32,7 @@ a1. | m6g | c6g | r6g | t4g)
     echo "ARM instance type detected"
     case $OS in
     ubuntu)
-        AMIID=$(aws ssm get-parameters --names "/aws/service/canonical/ubuntu/server/20.04/stable/current/arm64/hvm/ebs-gp2/ami-id" --query 'Parameters[0].Value' --output text)
+        AMIID=$(aws ssm get-parameters --names "/aws/service/canonical/ubuntu/server/20.04/stable/current/arm64/hvm/ebs-gp2/ami-id" --query "Parameters[0].Value" --output text)
         DEFAULT_USER="ubuntu"
         ;;
     debian)
@@ -44,7 +44,7 @@ a1. | m6g | c6g | r6g | t4g)
         DEFAULT_USER="centos"
         ;;
     al2)
-        AMIID=$(aws ssm get-parameters --region "$REGION" --names /aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-arm64-gp2 | jq '.Parameters[0].Value' -r)
+        AMIID=$(aws ssm get-parameters --region "$REGION" --names /aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-arm64-gp2 --query "Parameters[0].Value" --output text)
         ;;
     sles)
         AMIID=$(aws ec2 describe-images --owners 013907871322 --filters "Name=state,Values=available" "Name=name,Values=suse-sles-15-sp2-v*" "Name=architecture,Values=arm64" --query "reverse(sort_by(Images, &CreationDate))[:1].ImageId" --output text)
@@ -64,7 +64,7 @@ inf)
 *)
     case $OS in
     ubuntu)
-        AMIID=$(aws ssm get-parameters --names "/aws/service/canonical/ubuntu/server/20.04/stable/current/amd64/hvm/ebs-gp2/ami-id" --query 'Parameters[0].Value' --output text)
+        AMIID=$(aws ssm get-parameters --names "/aws/service/canonical/ubuntu/server/20.04/stable/current/amd64/hvm/ebs-gp2/ami-id" --query "Parameters[0].Value" --output text)
         DEFAULT_USER="ubuntu"
         ;;
     debian)
@@ -76,7 +76,7 @@ inf)
         DEFAULT_USER="centos"
         ;;
     al2)
-        AMIID=$(aws ssm get-parameters --region "$REGION" --names /aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2 | jq '.Parameters[0].Value' -r)
+        AMIID=$(aws ssm get-parameters --region "$REGION" --names /aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2 --query "Parameters[0].Value" --output text)
         ;;
     sles)
         AMIID=$(aws ec2 describe-images --owners 013907871322 --filters "Name=state,Values=available" "Name=name,Values=suse-sles-15-sp2-v*" "Name=architecture,Values=x86_64" --query "reverse(sort_by(Images, &CreationDate))[:1].ImageId" --output text)
@@ -94,10 +94,10 @@ echo ECS_CLUSTER=$CLUSTERNAME >> /etc/ecs/ecs.config
 EOF
 
 # get root device name
-ROOT_DEVICE_NAME=$(aws ec2 describe-images --image-ids "$AMIID" --query 'Images[0].RootDeviceName' --output text)
+ROOT_DEVICE_NAME=$(aws ec2 describe-images --image-ids "$AMIID" --query "Images[0].RootDeviceName" --output text)
 
 # get spot price
-price=$(aws ec2 describe-spot-price-history --instance-type "$INSTANCE_TYPE" --region "$REGION" --product-description "Linux/UNIX" --availability-zone "${REGION}a" | jq -r ".SpotPriceHistory[0].SpotPrice")
+price=$(aws ec2 describe-spot-price-history --instance-type "$INSTANCE_TYPE" --region "$REGION" --product-description "Linux/UNIX" --availability-zone "${REGION}a" --query "SpotPriceHistory[0].SpotPrice" --output text)
 bid=$(echo "$price * 2" | bc -l)
 echo "Spot price of instance $INSTANCE_TYPE is approximately \$$price/hour, bidding \$$bid/hour"
 
@@ -115,9 +115,10 @@ INSTANCE_ID=$(aws ec2 run-instances \
     --subnet-id "$SUBNETID" \
     --region "$REGION" \
     --block-device-mapping "[{\"DeviceName\":\"${ROOT_DEVICE_NAME}\",\"Ebs\":{\"VolumeSize\":100}}]" \
-    --associate-public-ip-address | jq -r ".Instances[0].InstanceId")
+    --associate-public-ip-address \
+    --query "Instances[0].InstanceId" --output text)
 
 printf " instanceID=$INSTANCE_ID"
 sleep 2
-PUBLIC_IP_ADDR=$(aws ec2 describe-instances --region "$REGION" --instance-ids "$INSTANCE_ID" | jq -r ".Reservations[0].Instances[0].PublicIpAddress")
+PUBLIC_IP_ADDR=$(aws ec2 describe-instances --region "$REGION" --instance-ids "$INSTANCE_ID" --query "Reservations[0].Instances[0].PublicIpAddress" --output text)
 echo " publicIPAddress=$DEFAULT_USER@$PUBLIC_IP_ADDR"
