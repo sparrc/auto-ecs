@@ -47,7 +47,7 @@ a1. | m6g | c6g | r6g | t4g)
         AMIID=$(aws ssm get-parameters --region "$REGION" --names /aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-arm64-gp2 --query "Parameters[0].Value" --output text)
         ;;
     sles)
-        AMIID=$(aws ec2 describe-images --owners 013907871322 --filters "Name=state,Values=available" "Name=name,Values=suse-sles-15-sp2-v*" "Name=architecture,Values=arm64" --query "reverse(sort_by(Images, &CreationDate))[:1].ImageId" --output text)
+        AMIID=$(aws ec2 describe-images --owners 013907871322 --filters "Name=state,Values=available" "Name=name,Values=suse-sles-15-sp2-v????????-hvm-*" "Name=architecture,Values=arm64" --query "reverse(sort_by(Images, &CreationDate))[:1].ImageId" --output text)
         ;;
     esac
     ;;
@@ -79,7 +79,7 @@ inf)
         AMIID=$(aws ssm get-parameters --region "$REGION" --names /aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2 --query "Parameters[0].Value" --output text)
         ;;
     sles)
-        AMIID=$(aws ec2 describe-images --owners 013907871322 --filters "Name=state,Values=available" "Name=name,Values=suse-sles-15-sp2-v*" "Name=architecture,Values=x86_64" --query "reverse(sort_by(Images, &CreationDate))[:1].ImageId" --output text)
+        AMIID=$(aws ec2 describe-images --owners 013907871322 --filters "Name=state,Values=available" "Name=name,Values=suse-sles-15-sp2-v????????-hvm-*" "Name=architecture,Values=x86_64" --query "reverse(sort_by(Images, &CreationDate))[:1].ImageId" --output text)
         ;;
     esac
     ;;
