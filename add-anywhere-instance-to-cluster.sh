@@ -81,6 +81,8 @@ inf)
     sles)
         AMIID=$(aws ec2 describe-images --owners 013907871322 --filters "Name=state,Values=available" "Name=name,Values=suse-sles-15-sp2-v????????-hvm-*" "Name=architecture,Values=x86_64" --query "reverse(sort_by(Images, &CreationDate))[:1].ImageId" --output text)
         ;;
+    *)
+        AMIID="$OS"
     esac
     ;;
 esac
