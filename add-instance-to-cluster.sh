@@ -36,13 +36,20 @@ inf)
     AMIID=$(aws ssm get-parameters --region "$REGION" --names /aws/service/ecs/optimized-ami/amazon-linux-2/inf/recommended/image_id --query "Parameters[0].Value" --output text)
     ;;
 *)
-    if [[ "$OS" == "bottlerocket" ]]; then
+    case $OS in
+    bottlerocket)
         AMIID=$(aws ssm get-parameter --region "$REGION" --name "/aws/service/bottlerocket/aws-ecs-1/x86_64/latest/image_id" --query "Parameter.Value" --output text)
-    else
+        ;;
+    al2)
         AMIID=$(aws ssm get-parameters --region "$REGION" --names /aws/service/ecs/optimized-ami/amazon-linux-2/recommended/image_id --query "Parameters[0].Value" --output text)
-    fi
-    # AL1 AMI
-    #AMIID=$(aws ssm get-parameters --region "$REGION" --names /aws/service/ecs/optimized-ami/amazon-linux/recommended/image_id | jq -r ".Parameters[0].Value")
+        ;;
+    al1)
+        AMIID=$(aws ssm get-parameters --region "$REGION" --names /aws/service/ecs/optimized-ami/amazon-linux/recommended/image_id | jq -r ".Parameters[0].Value")
+        ;;
+    *)
+        AMIID="$OS"
+        ;;
+    esac
     ;;
 esac
 
