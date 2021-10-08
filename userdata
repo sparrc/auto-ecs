@@ -89,3 +89,11 @@ git fetch --all
 
 chown -R ec2-user /home/ec2-user
 chgrp -R ec2-user /home/ec2-user
+
+# update the kernel and reboot
+#if [ ! -f /etc/.kernel-ng-installed ]; then
+#  amazon-linux-extras install kernel-ng
+#  touch /etc/.kernel-ng-installed
+#  reboot
+#fi
+
