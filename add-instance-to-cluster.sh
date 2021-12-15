@@ -43,6 +43,9 @@ inf)
     al2)
         AMIID=$(aws ssm get-parameters --region "$REGION" --names /aws/service/ecs/optimized-ami/amazon-linux-2/recommended/image_id --query "Parameters[0].Value" --output text)
         ;;
+    al2-generic)
+        AMIID=$(aws ssm get-parameters --region "$REGION" --names "/aws/service/ami-amazon-linux-latest/amzn2-ami-minimal-hvm-x86_64-ebs" --query "Parameters[0].Value" --output text)
+        ;;
     al1)
         AMIID=$(aws ssm get-parameters --region "$REGION" --names /aws/service/ecs/optimized-ami/amazon-linux/recommended/image_id | jq -r ".Parameters[0].Value")
         ;;
@@ -67,7 +70,7 @@ EOF
 fi
 
 # get root device name
-ROOT_DEVICE_NAME=$(aws ec2 describe-images --image-ids "$AMIID" --query "Images[0].RootDeviceName" --output text)
+ROOT_DEVICE_NAME=$(aws ec2 describe-images --region "$REGION" --image-ids "$AMIID" --query "Images[0].RootDeviceName" --output text)
 
 # get spot price
 price=$(aws ec2 describe-spot-price-history --instance-type "$INSTANCE_TYPE" --region "$REGION" --product-description "Linux/UNIX" --availability-zone "${REGION}a" --query "SpotPriceHistory[0].SpotPrice" --output text)
