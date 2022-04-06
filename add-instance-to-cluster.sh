@@ -45,11 +45,11 @@ al1)
 *)
     if [ -z "$OS" ]; then
         case $TYPE_PREFIX in
-        a1. | m6g | c6g | r6g | t4g)
+        a1. | m6g | c6g | r6g | t4g | g5g)
             echo "ARM instance type detected"
             AMIID=$(aws ssm get-parameters --region "$REGION" --names /aws/service/ecs/optimized-ami/amazon-linux-2/arm64/recommended/image_id --query "Parameters[0].Value" --output text)
             ;;
-        p2. | p3. | p4d | g4d | g3s | g3.)
+        p2. | p3. | p4d | g4d | g3s | g3. | g5.)
             echo "GPU instance type detected"
             AMIID=$(aws ssm get-parameters --region "$REGION" --names /aws/service/ecs/optimized-ami/amazon-linux-2/gpu/recommended/image_id --query "Parameters[0].Value" --output text)
             ;;

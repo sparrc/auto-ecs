@@ -20,7 +20,7 @@ fi
 ecs-cli configure --cluster "$clusterName" --config-name "$clusterName" --region "$region" --default-launch-type EC2
 
 # bring the cluster up
-upout=$(ecs-cli up --force --size 0 --cluster-config "$clusterName" --instance-role ecsInstanceRole --keypair "auto-ecs" --extra-user-data ./userdata 2>&1 | tee /dev/stderr)
+upout=$(ecs-cli up --force --instance-type t3.medium --size 0 --cluster-config "$clusterName" --instance-role ecsInstanceRole --keypair "auto-ecs" --extra-user-data ./userdata 2>&1 | tee /dev/stderr)
 
 # parse all the IDs out of the cluster up output
 vpcID=$(echo "$upout" | grep "VPC created" | sed -E 's/.*(vpc-.+$)/\1/')
