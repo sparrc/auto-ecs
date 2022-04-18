@@ -30,6 +30,9 @@ bottlerocket)
 al2)
     AMIID=$(aws ssm get-parameters --region "$REGION" --names /aws/service/ecs/optimized-ami/amazon-linux-2/recommended/image_id --query "Parameters[0].Value" --output text)
     ;;
+al2022)
+    AMIID=$(aws ssm get-parameters --region "$REGION" --names /aws/service/ecs/optimized-ami/amazon-linux-2022/recommended/image_id --query "Parameters[0].Value" --output text)
+    ;;
 al2-generic)
     AMIID=$(aws ssm get-parameters --region "$REGION" --names "/aws/service/ami-amazon-linux-latest/amzn2-ami-minimal-hvm-x86_64-ebs" --query "Parameters[0].Value" --output text)
     ;;
