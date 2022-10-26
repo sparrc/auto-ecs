@@ -98,16 +98,26 @@ EOF
 # get root device name
 ROOT_DEVICE_NAME=$(aws ec2 describe-images --image-ids "$AMIID" --query "Images[0].RootDeviceName" --output text)
 
-# get spot price
-price=$(aws ec2 describe-spot-price-history --instance-type "$INSTANCE_TYPE" --region "$REGION" --product-description "Linux/UNIX" --availability-zone "${REGION}a" --query "SpotPriceHistory[0].SpotPrice" --output text)
-bid=$(echo "$price * 2" | bc -l)
-echo "Spot price of instance $INSTANCE_TYPE is approximately \$$price/hour, bidding \$$bid/hour"
+# User can specify SPOT=0 if they do not want a spot instance
+if [ -z "$SPOT" ]; then
+    # default to spot instances if not specified
+    SPOT=1
+fi
+if [ $SPOT -ne 0 ]; then
+    # get spot price
+    price=$(aws ec2 describe-spot-price-history --instance-type "$INSTANCE_TYPE" --region "$REGION" --product-description "Linux/UNIX" --availability-zone "${REGION}a" --query "SpotPriceHistory[0].SpotPrice" --output text)
+    bid=$(echo "$price * 2" | bc -l)
+    echo "Spot price of instance $INSTANCE_TYPE is approximately \$$price/hour, bidding \$$bid/hour"
+    SPOTARG="--instance-market-options MarketType=spot,SpotOptions={MaxPrice=$bid,SpotInstanceType=one-time}"
+else
+    SPOTARG=""
+fi
+
 
 ID=$(python -c "import string; import random; print(''.join(random.choice(string.ascii_lowercase) for i in range(4)))")
 printf "Launching instance. name=$CLUSTERNAME-$ID amiID=$AMIID type=$INSTANCE_TYPE"
-INSTANCE_ID=$(aws ec2 run-instances \
+INSTANCE_ID=$(aws ec2 run-instances $SPOTARG \
     --image-id "$AMIID" \
-    --instance-market-options "MarketType=spot,SpotOptions={MaxPrice=$bid,SpotInstanceType=one-time}" \
     --tag-specifications "ResourceType=instance,Tags=[{Key=Name,Value=$CLUSTERNAME-$ID},{Key=Cluster,Value=$CLUSTERNAME}]" \
     --count 1 \
     --instance-type "$INSTANCE_TYPE" \
