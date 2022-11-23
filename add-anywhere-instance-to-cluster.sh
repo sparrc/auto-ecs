@@ -114,7 +114,7 @@ else
 fi
 
 
-ID=$(python -c "import string; import random; print(''.join(random.choice(string.ascii_lowercase) for i in range(4)))")
+ID=$(uuidgen | head -c 4)
 printf "Launching instance. name=$CLUSTERNAME-$ID amiID=$AMIID type=$INSTANCE_TYPE"
 INSTANCE_ID=$(aws ec2 run-instances $SPOTARG \
     --image-id "$AMIID" \
