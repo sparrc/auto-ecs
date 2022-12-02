@@ -121,7 +121,7 @@ INSTANCE_ID=$(aws ec2 run-instances $SPOTARG \
     --security-group-ids "$SGID" \
     --subnet-id "$SUBNETID" \
     --region "$REGION" \
-    --block-device-mapping "[{\"DeviceName\":\"${ROOT_DEVICE_NAME}\",\"Ebs\":{\"VolumeSize\":100}}]" \
+    --block-device-mapping "[{\"DeviceName\":\"${ROOT_DEVICE_NAME}\",\"Ebs\":{\"VolumeSize\":100,\"VolumeType\":\"gp3\"}}]" \
     --associate-public-ip-address \
     --query "Instances[0].InstanceId" --output text)
 
