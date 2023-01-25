@@ -89,6 +89,10 @@ echo ECS_CLUSTER=$CLUSTERNAME >> /etc/ecs/ecs.config
 EOF
 fi
 
+if [ -f ./setup-repos ]; then
+    cat ./setup-repos >>/tmp/userdata
+fi
+
 # get root device name
 ROOT_DEVICE_NAME=$(aws ec2 describe-images --region "$REGION" --image-ids "$AMIID" --query "Images[0].RootDeviceName" --output text)
 

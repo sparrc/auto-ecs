@@ -1,7 +1,8 @@
 #!/bin/bash
 
-GITHUB_USERNAME="sparrc"
-GO_VERSION="1.19.1"
+set -x
+
+GO_VERSION="1.19.5"
 
 yum install -y git zsh
 yum install -y vim jq aws-cli gcc rsync wget &
@@ -71,24 +72,8 @@ export AGENT=/home/ec2-user/go/src/github.com/aws/amazon-ecs-agent
 cd $AGENT
 EOF
 
-mkdir -p /home/ec2-user/go/src/github.com/aws
-cd /home/ec2-user/go/src/github.com/aws
-git clone https://github.com/$GITHUB_USERNAME/amazon-ecs-agent.git
-cd amazon-ecs-agent
-git checkout --track origin/dev
-git config --global pull.rebase true
-git config --global branch.autosetuprebase always
-git remote add upstream https://github.com/aws/amazon-ecs-agent.git
-git fetch --all
 
-cd /home/ec2-user/go/src/github.com/aws
-git clone https://github.com/$GITHUB_USERNAME/amazon-ecs-init.git
-cd amazon-ecs-init
-git remote add upstream https://github.com/aws/amazon-ecs-init.git
-git fetch --all
-
-chown -R ec2-user /home/ec2-user
-chgrp -R ec2-user /home/ec2-user
+wait
 
 # update the kernel and reboot
 #if [ ! -f /etc/.kernel-ng-installed ]; then

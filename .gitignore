@@ -2,3 +2,4 @@ repo.json
 config.json
 clusters/*
 tasks/*
+setup-repos
