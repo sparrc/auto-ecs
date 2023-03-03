@@ -36,14 +36,14 @@ al2022)
 al2-generic)
     AMIID=$(aws ssm get-parameters --region "$REGION" --names "/aws/service/ami-amazon-linux-latest/amzn2-ami-minimal-hvm-x86_64-ebs" --query "Parameters[0].Value" --output text)
     ;;
-al2022-minimal)
-    AMIID=$(aws ssm get-parameters --region "$REGION" --names /aws/service/ami-amazon-linux-latest/al2022-ami-minimal-kernel-default-x86_64 --query 'Parameters[0].[Value]' --output text)
+al2023-minimal)
+    AMIID=$(aws ssm get-parameters --region "$REGION" --names /aws/service/ami-amazon-linux-latest/al2023-ami-minimal-kernel-default-x86_64 --query 'Parameters[0].[Value]' --output text)
     ;;
-al2022-generic)
-    AMIID=$(aws ec2 describe-images --region "$REGION" --owners amazon --filters "Name=name,Values=al2022-ami-minimal-2022.0.*" "Name=architecture,Values=x86_64" --query "reverse(sort_by(Images, &CreationDate))[0].ImageId" --output text)
+al2023-generic)
+    AMIID=$(aws ec2 describe-images --region "$REGION" --owners amazon --filters "Name=name,Values=al2023-ami-minimal-2023.0.*" "Name=architecture,Values=x86_64" --query "reverse(sort_by(Images, &CreationDate))[0].ImageId" --output text)
     ;;
-al2022arm-generic)
-    AMIID=$(aws ec2 describe-images --region "$REGION" --owners amazon --filters "Name=name,Values=al2022-ami-minimal-2022.0.*" "Name=architecture,Values=arm64" --query "reverse(sort_by(Images, &CreationDate))[0].ImageId" --output text)
+al2023arm-generic)
+    AMIID=$(aws ec2 describe-images --region "$REGION" --owners amazon --filters "Name=name,Values=al2023-ami-minimal-2023.0.*" "Name=architecture,Values=arm64" --query "reverse(sort_by(Images, &CreationDate))[0].ImageId" --output text)
     ;;
 al1)
     AMIID=$(aws ssm get-parameters --region "$REGION" --names /aws/service/ecs/optimized-ami/amazon-linux/recommended/image_id | jq -r ".Parameters[0].Value")
