@@ -4,15 +4,15 @@ set -x
 
 GO_VERSION="1.20.1"
 
-yum install -y git zsh
+yum install -y git zsh yum-utils
 yum install -y vim jq aws-cli gcc rsync wget &
 ARCH=$(uname -m)
 GO_ARCH="amd64"
 if [[ "$ARCH" == "aarch64" ]]; then
     GO_ARCH="arm64"
-else
-    curl -o "/tmp/rg.rpm" "https://download.copr.fedorainfracloud.org/results/carlwgeorge/ripgrep/epel-7-$ARCH/00930337-ripgrep/ripgrep-11.0.1-1.el7.$ARCH.rpm" && yum -y install /tmp/rg.rpm &
 fi
+yum-config-manager --add-repo=https://copr.fedorainfracloud.org/coprs/carlwgeorge/ripgrep/repo/epel-7/carlwgeorge-ripgrep-epel-7.repo
+yum install -y ripgrep
 curl -o "/tmp/tig.rpm" "http://download-ib01.fedoraproject.org/pub/epel/7/$ARCH/Packages/t/tig-2.4.0-1.el7.$ARCH.rpm" && yum install -y /tmp/tig.rpm &
 curl -o "/tmp/go.tar.gz" "https://dl.google.com/go/go$GO_VERSION.linux-$GO_ARCH.tar.gz" && tar -C /usr/local -xzf /tmp/go.tar.gz &
 
