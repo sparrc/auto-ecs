@@ -47,7 +47,7 @@ a1. | m6g | c6g | r6g | t4g)
         AMIID=$(aws ssm get-parameters --region "$REGION" --names /aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-arm64-gp2 --query "Parameters[0].Value" --output text)
         ;;
     sles)
-        AMIID=$(aws ec2 describe-images --owners 013907871322 --filters "Name=state,Values=available" "Name=name,Values=suse-sles-15-sp2-v????????-hvm-*" "Name=architecture,Values=arm64" --query "reverse(sort_by(Images, &CreationDate))[:1].ImageId" --output text)
+        AMIID=$(aws ec2 describe-images --owners 013907871322 --filters "Name=state,Values=available" "Name=name,Values=suse-sles-15-sp?-v????????-hvm*" "Name=architecture,Values=arm64" --query "reverse(sort_by(Images, &CreationDate))[:1].ImageId" --output text)
         ;;
     esac
     ;;
@@ -67,8 +67,16 @@ inf)
         AMIID=$(aws ssm get-parameters --names "/aws/service/canonical/ubuntu/server/20.04/stable/current/amd64/hvm/ebs-gp2/ami-id" --query "Parameters[0].Value" --output text)
         DEFAULT_USER="ubuntu"
         ;;
-    debian)
+    ubuntu-22)
+        AMIID=$(aws ssm get-parameters --names "/aws/service/canonical/ubuntu/server/22.04/stable/current/amd64/hvm/ebs-gp2/ami-id" --query "Parameters[0].Value" --output text)
+        DEFAULT_USER="ubuntu"
+        ;;
+    debian-10)
         AMIID=$(aws ec2 describe-images --owners 136693071363 --filters "Name=state,Values=available" "Name=name,Values=debian-10-amd64-*" --query "reverse(sort_by(Images, &CreationDate))[:1].ImageId" --output text)
+        DEFAULT_USER="admin"
+        ;;
+    debian-11)
+        AMIID=$(aws ec2 describe-images --owners 136693071363 --filters "Name=state,Values=available" "Name=name,Values=debian-11-amd64-*" --query "reverse(sort_by(Images, &CreationDate))[:1].ImageId" --output text)
         DEFAULT_USER="admin"
         ;;
     centos)
@@ -79,7 +87,7 @@ inf)
         AMIID=$(aws ssm get-parameters --region "$REGION" --names /aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2 --query "Parameters[0].Value" --output text)
         ;;
     sles)
-        AMIID=$(aws ec2 describe-images --owners 013907871322 --filters "Name=state,Values=available" "Name=name,Values=suse-sles-15-sp2-v????????-hvm-*" "Name=architecture,Values=x86_64" --query "reverse(sort_by(Images, &CreationDate))[:1].ImageId" --output text)
+        AMIID=$(aws ec2 describe-images --owners 013907871322 --filters "Name=state,Values=available" "Name=name,Values=suse-sles-15-sp?-v????????-hvm*" "Name=architecture,Values=x86_64" --query "reverse(sort_by(Images, &CreationDate))[:1].ImageId" --output text)
         ;;
     *)
         AMIID="$OS"
@@ -128,6 +136,7 @@ INSTANCE_ID=$(aws ec2 run-instances $SPOTARG \
     --region "$REGION" \
     --block-device-mapping "[{\"DeviceName\":\"${ROOT_DEVICE_NAME}\",\"Ebs\":{\"VolumeSize\":100,\"VolumeType\":\"gp3\"}}]" \
     --associate-public-ip-address \
+    --instance-initiated-shutdown-behavior "terminate" \
     --query "Instances[0].InstanceId" --output text)
 
 printf " instanceID=$INSTANCE_ID"

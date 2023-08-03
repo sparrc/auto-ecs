@@ -30,6 +30,9 @@ bottlerocket)
 al2)
     AMIID=$(aws ssm get-parameters --region "$REGION" --names /aws/service/ecs/optimized-ami/amazon-linux-2/recommended/image_id --query "Parameters[0].Value" --output text)
     ;;
+al2-5.10)
+    AMIID=$(aws ssm get-parameters --region "$REGION" --names "/aws/service/ecs/optimized-ami/amazon-linux-2/kernel-5.10/recommended/image_id" --query "Parameters[0].Value" --output text)
+    ;;
 al2022)
     AMIID=$(aws ssm get-parameters --region "$REGION" --names /aws/service/ecs/optimized-ami/amazon-linux-2022/recommended/image_id --query "Parameters[0].Value" --output text)
     ;;
@@ -127,6 +130,7 @@ INSTANCE_ID=$(aws ec2 run-instances $SPOTARG \
     --region "$REGION" \
     --block-device-mapping "[{\"DeviceName\":\"${ROOT_DEVICE_NAME}\",\"Ebs\":{\"VolumeSize\":100,\"VolumeType\":\"gp3\"}}]" \
     --associate-public-ip-address \
+    --instance-initiated-shutdown-behavior "terminate" \
     --query "Instances[0].InstanceId" --output text)
 
 printf " instanceID=$INSTANCE_ID"

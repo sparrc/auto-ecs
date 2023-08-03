@@ -3,7 +3,7 @@
 # replace DEFAULT_USER with default user of the platform
 USER="DEFAULT_USER"
 GITHUB_USERNAME="sparrc"
-GO_VERSION="1.15.5"
+GO_VERSION="1.20.6"
 
 ARCH=$(uname -m)
 GO_ARCH="amd64"
@@ -15,8 +15,11 @@ curl -o "/tmp/go.tar.gz" "https://dl.google.com/go/go$GO_VERSION.linux-$GO_ARCH.
 PKG_MANAGER="yum"
 if which apt; then
     PKG_MANAGER="apt"
+    apt update -y
+    apt install -y make git tig jq ripgrep gcc
 elif which zypper; then
     PKG_MANAGER="zypper"
+    zypper install -y git make jq gcc
 fi
 
 mkdir -p /etc/ecs

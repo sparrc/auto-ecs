@@ -25,7 +25,7 @@ cat << EOF > /tmp/userdata
 <powershell>
 [Environment]::SetEnvironmentVariable("ECS_ENABLE_SPOT_INSTANCE_DRAINING", "true", "Machine")
 Import-Module ECSTools
-Initialize-ECSAgent -Cluster '$CLUSTERNAME' -EnableTaskIAMRole
+Initialize-ECSAgent -Cluster '$CLUSTERNAME' -EnableTaskIAMRole -Version 1.71.2
 </powershell>
 EOF
 
