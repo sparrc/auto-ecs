@@ -80,7 +80,7 @@ inf)
         DEFAULT_USER="admin"
         ;;
     centos)
-        AMIID=$(aws ec2 describe-images --owners 125523088429 --filters "Name=state,Values=available" "Name=name,Values=CentOS 8*" "Name=architecture,Values=x86_64" --query "reverse(sort_by(Images, &CreationDate))[:1].ImageId" --output text)
+        AMIID=$(aws ec2 describe-images --owners 125523088429 --filters "Name=state,Values=available" "Name=name,Values=CentOS Stream 8*" "Name=architecture,Values=x86_64" --query "reverse(sort_by(Images, &CreationDate))[:1].ImageId" --output text)
         DEFAULT_USER="centos"
         ;;
     al2)

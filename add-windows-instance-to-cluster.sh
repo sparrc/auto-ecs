@@ -19,13 +19,13 @@ CLUSTERNAME=$(jq -r .clusterName <"./clusters/$CLUSTERNAME.json")
 REGION=$(jq -r .region <"./clusters/$CLUSTERNAME.json")
 
 # Windows AMI and userdata
-AMIID=$(aws ssm get-parameters --names /aws/service/ami-windows-latest/Windows_Server-2019-English-Full-ECS_Optimized/image_id | jq -r ".Parameters[0].Value")
+AMIID=$(aws ssm get-parameters --names /aws/service/ami-windows-latest/Windows_Server-2022-English-Full-ECS_Optimized/image_id | jq -r ".Parameters[0].Value")
 
 cat << EOF > /tmp/userdata
 <powershell>
 [Environment]::SetEnvironmentVariable("ECS_ENABLE_SPOT_INSTANCE_DRAINING", "true", "Machine")
 Import-Module ECSTools
-Initialize-ECSAgent -Cluster '$CLUSTERNAME' -EnableTaskIAMRole -Version 1.71.2
+Initialize-ECSAgent -Cluster '$CLUSTERNAME' -EnableTaskIAMRole -Version 1.76.0
 </powershell>
 EOF
 
