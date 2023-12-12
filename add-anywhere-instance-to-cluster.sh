@@ -63,6 +63,10 @@ inf)
     ;;
 *)
     case $OS in
+    ubuntu-18)
+        AMIID=$(aws ssm get-parameters --names "/aws/service/canonical/ubuntu/server/18.04/stable/current/amd64/hvm/ebs-gp2/ami-id" --query "Parameters[0].Value" --output text)
+        DEFAULT_USER="ubuntu"
+        ;;
     ubuntu)
         AMIID=$(aws ssm get-parameters --names "/aws/service/canonical/ubuntu/server/20.04/stable/current/amd64/hvm/ebs-gp2/ami-id" --query "Parameters[0].Value" --output text)
         DEFAULT_USER="ubuntu"
@@ -85,6 +89,9 @@ inf)
         ;;
     al2)
         AMIID=$(aws ssm get-parameters --region "$REGION" --names /aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2 --query "Parameters[0].Value" --output text)
+        ;;
+    al1)
+        AMIID=$(aws ssm get-parameters --region "$REGION" --names /aws/service/ami-amazon-linux-latest/amzn-ami-hvm-x86_64-gp2 --query "Parameters[0].Value" --output text)
         ;;
     sles)
         AMIID=$(aws ec2 describe-images --owners 013907871322 --filters "Name=state,Values=available" "Name=name,Values=suse-sles-15-sp?-v????????-hvm*" "Name=architecture,Values=x86_64" --query "reverse(sort_by(Images, &CreationDate))[:1].ImageId" --output text)
@@ -129,7 +136,8 @@ INSTANCE_ID=$(aws ec2 run-instances $SPOTARG \
     --tag-specifications "ResourceType=instance,Tags=[{Key=Name,Value=$CLUSTERNAME-$ID},{Key=Cluster,Value=$CLUSTERNAME}]" \
     --count 1 \
     --instance-type "$INSTANCE_TYPE" \
-    --key-name "auto-ecs" \
+    --iam-instance-profile Name=ecsInstanceRole \
+    --key-name "auto-ecs-ed25519" \
     --user-data file:///tmp/userdata \
     --security-group-ids "$SGID" \
     --subnet-id "$SUBNETID" \

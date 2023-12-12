@@ -9,7 +9,7 @@ scripts for auto-setup of an ECS cluster and agent workdir
 3. create an IAM role called ecsInstanceRole with the following policy attached: AmazonEC2ContainerServiceforEC2Role. see [here](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/instance_IAM_role.html) for more details on this role.
 4. [your ssh key](https://help.github.com/articles/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent/) imported to all regions:
 ```
-./create-key-pairs.sh ~/.ssh/id_rsa.pub
+./create-key-pairs.sh ~/.ssh/id_ed25519.pub
 ```
 
 ### Directions:

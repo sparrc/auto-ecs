@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 
-ID_RSA_FILE="${1:-}"
-if [ -z "$ID_RSA_FILE" ]; then
-    echo "You must specify a public key file (ie, ~/.ssh/id_rsa.pub)"
+ID_FILE="${1:-}"
+if [ -z "$ID_FILE" ]; then
+    echo "You must specify a public key file (ie, ~/.ssh/id_ed25519.pub)"
     exit 1
 fi
 
@@ -25,5 +25,5 @@ eu-north-1"
 
 for region in $(echo $REGIONS); do
     echo "Creating ec2 keypair in $region"
-    aws ec2 import-key-pair --region "$region" --key-name "auto-ecs" --public-key-material "fileb://$ID_RSA_FILE"
+    aws ec2 import-key-pair --region "$region" --key-name "auto-ecs-ed25519" --public-key-material "fileb://$ID_FILE"
 done

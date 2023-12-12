@@ -14,8 +14,11 @@ fi
 
 REGION=$(jq -r .region <"./clusters/$CLUSTERNAME.json")
 
+instances=$(aws ec2 describe-instances --region "$REGION" --filters "Name=tag:Cluster,Values=$CLUSTERNAME" "Name=instance-state-name,Values=running")
+echo "$instances" | jq .
 # find all instances that are part of the cluster:
-for instance in $(aws ec2 describe-instances --region "$REGION" --filters "Name=tag:Cluster,Values=$CLUSTERNAME" "Name=instance-state-name,Values=running" | jq -c ".Reservations[].Instances[]"); do
+for instance in $(echo "$instances" | jq -c ".Reservations[].Instances[]"); do
+    echo "$instance"
     id=$(echo "$instance" | jq -r .InstanceId)
     imageid=$(echo "$instance" | jq -r .ImageId)
     imagename=$(aws ec2 describe-images --region "$REGION" --image-ids "$imageid" | jq -r '.Images[0].Name')

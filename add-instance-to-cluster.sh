@@ -33,8 +33,8 @@ al2)
 al2-5.10)
     AMIID=$(aws ssm get-parameters --region "$REGION" --names "/aws/service/ecs/optimized-ami/amazon-linux-2/kernel-5.10/recommended/image_id" --query "Parameters[0].Value" --output text)
     ;;
-al2022)
-    AMIID=$(aws ssm get-parameters --region "$REGION" --names /aws/service/ecs/optimized-ami/amazon-linux-2022/recommended/image_id --query "Parameters[0].Value" --output text)
+al2023)
+    AMIID=$(aws ssm get-parameters --region "$REGION" --names /aws/service/ecs/optimized-ami/amazon-linux-2023/recommended/image_id --query "Parameters[0].Value" --output text)
     ;;
 al2-generic)
     AMIID=$(aws ssm get-parameters --region "$REGION" --names "/aws/service/ami-amazon-linux-latest/amzn2-ami-minimal-hvm-x86_64-ebs" --query "Parameters[0].Value" --output text)
@@ -123,7 +123,7 @@ INSTANCE_ID=$(aws ec2 run-instances $SPOTARG \
     --iam-instance-profile Name=ecsInstanceRole \
     --count 1 \
     --instance-type "$INSTANCE_TYPE" \
-    --key-name "auto-ecs" \
+    --key-name "auto-ecs-ed25519" \
     --user-data file:///tmp/userdata \
     --security-group-ids "$SGID" \
     --subnet-id "$SUBNETID" \
