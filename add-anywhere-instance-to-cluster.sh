@@ -136,7 +136,6 @@ INSTANCE_ID=$(aws ec2 run-instances $SPOTARG \
     --tag-specifications "ResourceType=instance,Tags=[{Key=Name,Value=$CLUSTERNAME-$ID},{Key=Cluster,Value=$CLUSTERNAME}]" \
     --count 1 \
     --instance-type "$INSTANCE_TYPE" \
-    --iam-instance-profile Name=ecsInstanceRole \
     --key-name "auto-ecs-ed25519" \
     --user-data file:///tmp/userdata \
     --security-group-ids "$SGID" \
