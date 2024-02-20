@@ -63,6 +63,10 @@ inf)
     ;;
 *)
     case $OS in
+    ubuntu-16)
+        AMIID=$(aws ssm get-parameters --names "/aws/service/canonical/ubuntu/server/16.04/stable/current/amd64/hvm/ebs-gp2/ami-id" --query "Parameters[0].Value" --output text)
+        DEFAULT_USER="ubuntu"
+        ;;
     ubuntu-18)
         AMIID=$(aws ssm get-parameters --names "/aws/service/canonical/ubuntu/server/18.04/stable/current/amd64/hvm/ebs-gp2/ami-id" --query "Parameters[0].Value" --output text)
         DEFAULT_USER="ubuntu"
