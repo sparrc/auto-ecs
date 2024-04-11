@@ -2,7 +2,7 @@
 
 set -x
 
-GO_VERSION="1.20.1"
+GO_VERSION="1.22.2"
 
 yum install -y git zsh yum-utils
 yum install -y vim jq aws-cli gcc rsync wget &
