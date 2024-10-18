@@ -3,7 +3,7 @@ set -eou pipefail
 
 CLUSTERNAME="${1:-}"
 if [ -z "$CLUSTERNAME" ]; then
-    echo "You must specify a cluster to take down"
+    echo "You must specify a cluster to list instances from"
     exit 1
 fi
 
