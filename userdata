@@ -9,9 +9,8 @@ GO_ARCH="amd64"
 if [[ "$ARCH" == "aarch64" ]]; then
     GO_ARCH="arm64"
 fi
-yum-config-manager --add-repo=https://copr.fedorainfracloud.org/coprs/carlwgeorge/ripgrep/repo/epel-7/carlwgeorge-ripgrep-epel-7.repo
-yum install -y ripgrep
 curl -o "/tmp/tig.rpm" "http://download-ib01.fedoraproject.org/pub/epel/7/$ARCH/Packages/t/tig-2.4.0-1.el7.$ARCH.rpm" && yum install -y /tmp/tig.rpm &
+curl -sSL -o /tmp/rg.tar.gz "https://github.com/BurntSushi/ripgrep/releases/download/14.1.1/ripgrep-14.1.1-x86_64-unknown-linux-musl.tar.gz" && tar -xvf /tmp/rg.tar.gz && cp "ripgrep-14.1.1-x86_64-unknown-linux-musl/rg" "/usr/local/bin/rg"
 
 cat <<EOF >>/etc/ecs/ecs.config
 ECS_LOGLEVEL=debug
@@ -19,7 +18,9 @@ ECS_LOG_ROLLOVER_TYPE=size
 ECS_ENABLE_SPOT_INSTANCE_DRAINING=true
 ECS_ENGINE_TASK_CLEANUP_WAIT_DURATION=5m
 ECS_LOG_MAX_FILE_SIZE_MB=3000
+ECS_WARM_POOLS_CHECK=true
 EOF
+
 
 cat <<EOF >/home/ec2-user/.vimrc
 set number mouse=a colorcolumn=80 smartindent tabstop=4 laststatus=2 nocompatible
@@ -70,9 +71,15 @@ export AGENT=/home/ec2-user/go/src/github.com/aws/amazon-ecs-agent
 cd $AGENT
 EOF
 
+# install security updates 8am nightly (UTC timezone)
+echo "0 8 * * * root yum update -y --security && shutdown -r now" > /etc/cron.d/security-updates
+chmod 0644 /etc/cron.d/security-updates
+
 rm -rf /var/lib/ecs/deps/serviceconnect
 
 wait
+
+systemctl disable ecs
 
 # update the kernel and reboot
 #if [ ! -f /etc/.kernel-ng-installed ]; then

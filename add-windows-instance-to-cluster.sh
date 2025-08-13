@@ -13,10 +13,11 @@ if [ -z "$INSTANCE_TYPE" ]; then
     INSTANCE_TYPE="m5.large"
 fi
 
-SGID=$(jq -r .sgID <"./clusters/$CLUSTERNAME.json")
-SUBNETID=$(jq -r .subnet1ID <"./clusters/$CLUSTERNAME.json")
-CLUSTERNAME=$(jq -r .clusterName <"./clusters/$CLUSTERNAME.json")
-REGION=$(jq -r .region <"./clusters/$CLUSTERNAME.json")
+if [ -z "$REGION" ]; then
+    REGION="us-west-2"
+fi
+SUBNETID=$(aws cloudformation describe-stacks --region ${REGION} --stack-name ${CLUSTERNAME} --query "Stacks[0].Outputs[?OutputKey=='EcsPublicSubnetId'].OutputValue" --output text)
+SGID=$(aws cloudformation describe-stacks --region ${REGION} --stack-name ${CLUSTERNAME} --query "Stacks[0].Outputs[?OutputKey=='EcsSecurityGroupId'].OutputValue" --output text)
 
 # Windows AMI and userdata
 AMIID=$(aws ssm get-parameters --names /aws/service/ami-windows-latest/Windows_Server-2022-English-Full-ECS_Optimized/image_id | jq -r ".Parameters[0].Value")
@@ -25,7 +26,7 @@ cat << EOF > /tmp/userdata
 <powershell>
 [Environment]::SetEnvironmentVariable("ECS_ENABLE_SPOT_INSTANCE_DRAINING", "true", "Machine")
 Import-Module ECSTools
-Initialize-ECSAgent -Cluster '$CLUSTERNAME' -EnableTaskIAMRole -Version 1.76.0
+Initialize-ECSAgent -Cluster '$CLUSTERNAME' -EnableTaskIAMRole -Version 1.95.0
 </powershell>
 EOF
 

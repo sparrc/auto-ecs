@@ -19,10 +19,11 @@ if [ -z "$OS" ]; then
     exit 1
 fi
 
-SGID=$(jq -r .sgID <"./clusters/$CLUSTERNAME.json")
-SUBNETID=$(jq -r .subnet1ID <"./clusters/$CLUSTERNAME.json")
-CLUSTERNAME=$(jq -r .clusterName <"./clusters/$CLUSTERNAME.json")
-REGION=$(jq -r .region <"./clusters/$CLUSTERNAME.json")
+if [ -z "$REGION" ]; then
+    REGION="us-west-2"
+fi
+SUBNETID=$(aws cloudformation describe-stacks --region ${REGION} --stack-name ${CLUSTERNAME} --query "Stacks[0].Outputs[?OutputKey=='EcsPublicSubnetId'].OutputValue" --output text)
+SGID=$(aws cloudformation describe-stacks --region ${REGION} --stack-name ${CLUSTERNAME} --query "Stacks[0].Outputs[?OutputKey=='EcsSecurityGroupId'].OutputValue" --output text)
 
 AMIID=""
 DEFAULT_USER="ec2-user"
@@ -79,6 +80,10 @@ inf)
         AMIID=$(aws ssm get-parameters --names "/aws/service/canonical/ubuntu/server/22.04/stable/current/amd64/hvm/ebs-gp2/ami-id" --query "Parameters[0].Value" --output text)
         DEFAULT_USER="ubuntu"
         ;;
+    ubuntu-24)
+        AMIID=$(aws ssm get-parameters --names "/aws/service/canonical/ubuntu/server/24.04/stable/current/amd64/hvm/ebs-gp3/ami-id" --query "Parameters[0].Value" --output text)
+        DEFAULT_USER="ubuntu"
+        ;;
     debian-10)
         AMIID=$(aws ec2 describe-images --owners 136693071363 --filters "Name=state,Values=available" "Name=name,Values=debian-10-amd64-*" --query "reverse(sort_by(Images, &CreationDate))[:1].ImageId" --output text)
         DEFAULT_USER="admin"
@@ -88,7 +93,7 @@ inf)
         DEFAULT_USER="admin"
         ;;
     centos)
-        AMIID=$(aws ec2 describe-images --owners 125523088429 --filters "Name=state,Values=available" "Name=name,Values=CentOS Stream 8*" "Name=architecture,Values=x86_64" --query "reverse(sort_by(Images, &CreationDate))[:1].ImageId" --output text)
+        AMIID=$(aws ec2 describe-images --owners 125523088429 --filters "Name=state,Values=available" "Name=name,Values=CentOS Stream 9*" "Name=architecture,Values=x86_64" --query "reverse(sort_by(Images, &CreationDate))[:1].ImageId" --output text)
         DEFAULT_USER="centos"
         ;;
     al2)

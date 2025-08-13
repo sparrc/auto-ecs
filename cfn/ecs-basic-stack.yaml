@@ -1,0 +1,19 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'ECS resources for a basic ECS/EC2 cluster'
+
+Resources:
+  EcsCluster:
+    Type: AWS::ECS::Cluster
+    Properties:
+      ClusterName: !Ref AWS::StackName
+
+Outputs:
+  EcsSecurityGroupId:
+    Description: ID of the ECS Security Group
+    Value: !ImportValue DefaultEcsSecurityGroupId
+  EcsPublicSubnetId:
+    Description: ID of the ECS Subnet
+    Value: !ImportValue DefaultEcsPublicSubnetId
+  EcsClusterArn:
+    Description: ARN of the ECS Cluster
+    Value: !GetAtt EcsCluster.Arn

@@ -15,10 +15,11 @@ fi
 
 OS="${3:-}"
 
-SGID=$(jq -r .sgID <"./clusters/$CLUSTERNAME.json")
-SUBNETID=$(jq -r .subnet1ID <"./clusters/$CLUSTERNAME.json")
-CLUSTERNAME=$(jq -r .clusterName <"./clusters/$CLUSTERNAME.json")
-REGION=$(jq -r .region <"./clusters/$CLUSTERNAME.json")
+if [ -z "$REGION" ]; then
+    REGION="us-west-2"
+fi
+SUBNETID=$(aws cloudformation describe-stacks --region ${REGION} --stack-name ${CLUSTERNAME} --query "Stacks[0].Outputs[?OutputKey=='EcsPublicSubnetId'].OutputValue" --output text)
+SGID=$(aws cloudformation describe-stacks --region ${REGION} --stack-name ${CLUSTERNAME} --query "Stacks[0].Outputs[?OutputKey=='EcsSecurityGroupId'].OutputValue" --output text)
 
 AMIID=""
 TYPE_PREFIX="${INSTANCE_TYPE:0:3}"
@@ -35,6 +36,9 @@ al2-5.10)
     ;;
 al2023)
     AMIID=$(aws ssm get-parameters --region "$REGION" --names /aws/service/ecs/optimized-ami/amazon-linux-2023/recommended/image_id --query "Parameters[0].Value" --output text)
+    ;;
+al2023gpu)
+    AMIID=$(aws ssm get-parameters --region "$REGION" --names /aws/service/ecs/optimized-ami/amazon-linux-2023/gpu/recommended/image_id --query "Parameters[0].Value" --output text)
     ;;
 al2-generic)
     AMIID=$(aws ssm get-parameters --region "$REGION" --names "/aws/service/ami-amazon-linux-latest/amzn2-ami-minimal-hvm-x86_64-ebs" --query "Parameters[0].Value" --output text)
@@ -56,19 +60,19 @@ al1)
         case $TYPE_PREFIX in
         a1. | m6g | c6g | r6g | t4g | g5g)
             echo "ARM instance type detected"
-            AMIID=$(aws ssm get-parameters --region "$REGION" --names /aws/service/ecs/optimized-ami/amazon-linux-2/arm64/recommended/image_id --query "Parameters[0].Value" --output text)
+            AMIID=$(aws ssm get-parameters --region "$REGION" --names /aws/service/ecs/optimized-ami/amazon-linux-2023/arm64/recommended/image_id --query "Parameters[0].Value" --output text)
             ;;
         p2. | p3. | p4d | g4d | g3s | g3. | g5.)
             echo "GPU instance type detected"
-            AMIID=$(aws ssm get-parameters --region "$REGION" --names /aws/service/ecs/optimized-ami/amazon-linux-2/gpu/recommended/image_id --query "Parameters[0].Value" --output text)
+            AMIID=$(aws ssm get-parameters --region "$REGION" --names /aws/service/ecs/optimized-ami/amazon-linux-2023/gpu/recommended/image_id --query "Parameters[0].Value" --output text)
             ;;
         inf)
             echo "INF instance type detected"
             AMIID=$(aws ssm get-parameters --region "$REGION" --names /aws/service/ecs/optimized-ami/amazon-linux-2/inf/recommended/image_id --query "Parameters[0].Value" --output text)
             ;;
         *)
-            echo "Regular instance type, getting AL2 ECS-Optimized AMI"
-            AMIID=$(aws ssm get-parameters --region "$REGION" --names /aws/service/ecs/optimized-ami/amazon-linux-2/recommended/image_id --query "Parameters[0].Value" --output text)
+            echo "Regular instance type, getting AL2023 ECS-Optimized AMI"
+            AMIID=$(aws ssm get-parameters --region "$REGION" --names /aws/service/ecs/optimized-ami/amazon-linux-2023/recommended/image_id --query "Parameters[0].Value" --output text)
             ;;
         esac
     else
@@ -128,9 +132,10 @@ INSTANCE_ID=$(aws ec2 run-instances $SPOTARG \
     --security-group-ids "$SGID" \
     --subnet-id "$SUBNETID" \
     --region "$REGION" \
-    --block-device-mapping "[{\"DeviceName\":\"${ROOT_DEVICE_NAME}\",\"Ebs\":{\"VolumeSize\":100,\"VolumeType\":\"gp3\"}}]" \
+    --block-device-mapping "[{\"DeviceName\":\"${ROOT_DEVICE_NAME}\",\"Ebs\":{\"VolumeSize\":200,\"VolumeType\":\"gp3\"}}]" \
     --associate-public-ip-address \
     --instance-initiated-shutdown-behavior "terminate" \
+    --metadata-options "HttpEndpoint=enabled,HttpTokens=required,HttpPutResponseHopLimit=2" \
     --query "Instances[0].InstanceId" --output text)
 
 printf " instanceID=$INSTANCE_ID"

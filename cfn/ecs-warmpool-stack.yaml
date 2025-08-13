@@ -1,0 +1,109 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'ECS Cluster with EC2 instances using existing VPC and subnets'
+
+Parameters:
+  LatestAmiId:
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
+    Default: /aws/service/ecs/optimized-ami/amazon-linux-2023/recommended/image_id
+
+  EcsClusterName:
+    Type: String
+    Description: Name of the ECS cluster to create
+
+  SshKeyPairName:
+    Type: AWS::EC2::KeyPair::KeyName
+    Description: Name of an existing EC2 KeyPair to enable SSH access to the instances
+    Default: 'auto-ecs-ed25519'
+
+  EcsInstanceRoleName:
+    Type: String
+    Description: Name of the IAM role for ECS instances
+    Default: 'ecsInstanceRole'
+
+  SubnetIds:
+    Type: List<AWS::EC2::Subnet::Id>
+    Description: List of subnet IDs to use for the Auto Scaling group
+
+Resources:
+  EcsCluster:
+    Type: AWS::ECS::Cluster
+    Properties:
+      ClusterName: !Ref EcsClusterName
+      Tags:
+        - Key: Name
+          Value: !Ref EcsClusterName
+
+  EcsInstanceLaunchTemplate:
+    Type: AWS::EC2::LaunchTemplate
+    Properties:
+      LaunchTemplateName: !Sub ${EcsClusterName}-launch-template
+      LaunchTemplateData:
+        ImageId: !Ref LatestAmiId
+        InstanceType: c7i.large
+        KeyName: !Ref SshKeyPairName
+        IamInstanceProfile:
+          Name: !Ref EcsInstanceRoleName
+        HibernationOptions:
+          Configured: true
+        NetworkInterfaces:
+          - AssociatePublicIpAddress: true
+            DeviceIndex: 0
+            Groups:
+              - !ImportValue DefaultEcsSecurityGroupId
+        BlockDeviceMappings:
+          - DeviceName: /dev/xvda
+            Ebs:
+              VolumeSize: 30
+              VolumeType: gp3
+              Encrypted: true
+              DeleteOnTermination: true
+        UserData:
+          Fn::Base64: !Sub |
+            #!/bin/bash
+            echo ECS_CLUSTER=${EcsClusterName} >> /etc/ecs/ecs.config
+            echo ECS_LOGLEVEL=info >> /etc/ecs/ecs.config
+            echo ECS_LOG_ROLLOVER_TYPE=size >> /etc/ecs/ecs.config
+            echo ECS_ENGINE_TASK_CLEANUP_WAIT_DURATION=5m >> /etc/ecs/ecs.config
+            echo ECS_LOG_MAX_FILE_SIZE_MB=3000 >> /etc/ecs/ecs.config
+            echo ECS_WARM_POOLS_CHECK=true >> /etc/ecs/ecs.config
+            dnf install -y ec2-hibinit-agent
+            systemctl enable --now hibinit-agent
+      TagSpecifications:
+        - ResourceType: launch-template
+          Tags:
+            - Key: Name
+              Value: !Sub ${EcsClusterName} Launch Template
+
+  EcsAutoScalingGroup:
+    Type: AWS::AutoScaling::AutoScalingGroup
+    Properties:
+      VPCZoneIdentifier: !Ref SubnetIds
+      LaunchTemplate:
+        LaunchTemplateId: !Ref EcsInstanceLaunchTemplate
+        Version: !GetAtt EcsInstanceLaunchTemplate.LatestVersionNumber
+      MinSize: 0
+      MaxSize: 2
+      DesiredCapacity: 1
+      Tags:
+        - Key: Name
+          Value: !Sub ${EcsClusterName} ECS Instance
+          PropagateAtLaunch: true
+
+  EcsWarmPool:
+    Type: AWS::AutoScaling::WarmPool
+    Properties:
+      AutoScalingGroupName: !Ref EcsAutoScalingGroup
+      PoolState: Hibernated
+      InstanceReusePolicy:
+        ReuseOnScaleIn: true
+      MinSize: 0
+      MaxGroupPreparedCapacity: 2
+
+Outputs:
+  EcsClusterName:
+    Description: Name of the ECS cluster
+    Value: !Ref EcsCluster
+
+  SecurityGroupId:
+    Description: ID of the ECS Security Group
+    Value: !Ref EcsSecurityGroup

@@ -1,5 +1,5 @@
 #!/bin/bash
-set -eou pipefail
+set -ex
 
 CLUSTERNAME="${1:-}"
 if [ -z "$CLUSTERNAME" ]; then
@@ -7,18 +7,17 @@ if [ -z "$CLUSTERNAME" ]; then
     exit 1
 fi
 
-if [ ! -f "./clusters/$CLUSTERNAME.json" ]; then
-    echo "./clusters/$CLUSTERNAME.json config file not found"
-    exit 1
+if [ -z "$REGION" ]; then
+    REGION="us-west-2"
 fi
-
-REGION=$(jq -r .region <"./clusters/$CLUSTERNAME.json")
 
 # find all instances that are part of the cluster:
 for instanceID in $(aws ec2 describe-instances --region "$REGION" --filters "Name=tag:Cluster,Values=$CLUSTERNAME" | jq -r ".Reservations[].Instances[].InstanceId"); do
     echo "Terminating $instanceID"
-    aws ec2 terminate-instances --instance-ids $instanceID | jq .
+    aws ec2 terminate-instances --region "$REGION" --instance-ids $instanceID | jq .
 done
 
-ecs-cli down --force --cluster-config "$CLUSTERNAME"
-rm "./clusters/$CLUSTERNAME.json"
+aws cloudformation delete-stack --region "$REGION" --stack-name ${CLUSTERNAME}
+echo "Waiting for stack deletion to complete"
+aws cloudformation wait stack-delete-complete --region "$REGION" --stack-name ${CLUSTERNAME}
+aws cloudformation describe-stacks --region ${REGION} --stack-name ${CLUSTERNAME} | jq .

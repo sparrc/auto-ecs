@@ -1,0 +1,125 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'ECS resources for a basic ECS/EC2 cluster'
+
+Resources:
+  EcsSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      VpcId: !Ref EcsVpc
+      GroupDescription: Security group for ECS instances
+      GroupName: Default-ECS-SG
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: "-1"
+          FromPort: -1
+          ToPort: -1
+          CidrIp: 10.0.0.0/16
+      SecurityGroupEgress:
+        - IpProtocol: "-1"
+          FromPort: -1
+          ToPort: -1
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: Default-ECS-SG
+
+  EcsVpc:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.0.0.0/16
+      EnableDnsHostnames: true
+      EnableDnsSupport: true
+      Tags:
+        - Key: Name
+          Value: Default-ECS-VPC
+
+  EcsPublicSubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref EcsVpc
+      CidrBlock: 10.0.1.0/24
+      MapPublicIpOnLaunch: true
+      AvailabilityZone: !Select [ 0, !GetAZs '' ]
+      Tags:
+        - Key: Name
+          Value: Default-ECS-Subnet-Public
+
+  EcsPrivateSubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref EcsVpc
+      CidrBlock: 10.0.2.0/24
+      MapPublicIpOnLaunch: false
+      AvailabilityZone: !Select [ 0, !GetAZs '' ]
+      Tags:
+        - Key: Name
+          Value: Default-ECS-Subnet-Private
+
+  EcsInternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: Default-ECS-InternetGateway
+
+  EcsVPCGatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: !Ref EcsVpc
+      InternetGatewayId: !Ref EcsInternetGateway
+
+  EcsRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref EcsVpc
+      Tags:
+        - Key: Name
+          Value: Default-ECS-RouteTable
+
+  EcsPrivateRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref EcsVpc
+      Tags:
+        - Key: Name
+          Value: Default-ECS-Private-RouteTable
+
+  EcsPrivateSubnetRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref EcsPrivateSubnet
+      RouteTableId: !Ref EcsPrivateRouteTable
+
+  EcsRoute:
+    Type: AWS::EC2::Route
+    DependsOn: EcsVPCGatewayAttachment
+    Properties:
+      RouteTableId: !Ref EcsRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref EcsInternetGateway
+
+  EcsSubnetRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref EcsPublicSubnet
+      RouteTableId: !Ref EcsRouteTable
+
+Outputs:
+  DefaultEcsSecurityGroupId:
+    Description: ID of the ECS Security Group
+    Value: !GetAtt EcsSecurityGroup.GroupId
+    Export:
+      Name: DefaultEcsSecurityGroupId
+  DefaultEcsPublicSubnetId:
+    Description: ID of the ECS Subnet
+    Value: !Ref EcsPublicSubnet
+    Export:
+      Name: DefaultEcsPublicSubnetId
+  DefaultEcsVpcId:
+    Description: ID of the ECS Subnet
+    Value: !Ref EcsPublicSubnet
+    Export:
+      Name: DefaultEcsVpcId

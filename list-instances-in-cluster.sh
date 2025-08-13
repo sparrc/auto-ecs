@@ -1,5 +1,5 @@
 #!/bin/bash
-set -eou pipefail
+set -e
 
 CLUSTERNAME="${1:-}"
 if [ -z "$CLUSTERNAME" ]; then
@@ -7,12 +7,9 @@ if [ -z "$CLUSTERNAME" ]; then
     exit 1
 fi
 
-if [ ! -f "./clusters/$CLUSTERNAME.json" ]; then
-    echo "./clusters/$CLUSTERNAME.json config file not found"
-    exit 1
+if [ -z "$REGION" ]; then
+    REGION="us-west-2"
 fi
-
-REGION=$(jq -r .region <"./clusters/$CLUSTERNAME.json")
 
 instances=$(aws ec2 describe-instances --region "$REGION" --filters "Name=tag:Cluster,Values=$CLUSTERNAME" "Name=instance-state-name,Values=running")
 echo "$instances" | jq .

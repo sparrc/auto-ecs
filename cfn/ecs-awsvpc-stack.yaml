@@ -1,0 +1,152 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'ECS resources for awsvpc networking mode'
+
+Resources:
+  EcsCluster:
+    Type: AWS::ECS::Cluster
+    Properties:
+      ClusterName: !Ref AWS::StackName
+
+  EcsSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    DependsOn: EcsVpc
+    Properties:
+      VpcId: !Ref EcsVpc
+      GroupDescription: Security group for ECS instances
+      GroupName: !Sub ${AWS::StackName}-EcsSecurityGroup
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 0
+          ToPort: 65535
+          CidrIp: 10.0.0.0/16
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          FromPort: -1
+          ToPort: -1
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: !Sub ${AWS::StackName}-EcsSecurityGroup
+
+  EcsVpc:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.0.0.0/16
+      EnableDnsHostnames: true
+      EnableDnsSupport: true
+      Tags:
+        - Key: Name
+          Value: !Sub ${AWS::StackName}-EcsVpc
+
+  EcsPublicSubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref EcsVpc
+      CidrBlock: 10.0.1.0/24
+      MapPublicIpOnLaunch: true
+      AvailabilityZone: !Select [ 0, !GetAZs '' ]
+      Tags:
+        - Key: Name
+          Value: !Sub ${AWS::StackName}-EcsPublicSubnet
+
+  EcsPrivateSubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref EcsVpc
+      CidrBlock: 10.0.2.0/24
+      MapPublicIpOnLaunch: false
+      AvailabilityZone: !Select [ 0, !GetAZs '' ]
+      Tags:
+        - Key: Name
+          Value: !Sub ${AWS::StackName}-EcsPrivateSubnet
+
+  EcsInternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Sub ${AWS::StackName}-EcsInternetGateway
+
+  EcsVPCGatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: !Ref EcsVpc
+      InternetGatewayId: !Ref EcsInternetGateway
+
+  EcsNatGateway:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Sub ${AWS::StackName}-NatGateway
+      AllocationId: !GetAtt EcsNatGatewayEIP.AllocationId
+      SubnetId: !Ref EcsPublicSubnet
+
+  EcsNatGatewayEIP:
+    Type: AWS::EC2::EIP
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Ref AWS::StackName
+      Domain: vpc
+
+  EcsPublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref EcsVpc
+      Tags:
+        - Key: Name
+          Value: !Sub ${AWS::StackName}-EcsPublicRouteTable
+
+  EcsPrivateRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref EcsVpc
+      Tags:
+        - Key: Name
+          Value: !Sub ${AWS::StackName}-EcsPrivateRouteTable
+
+  EcsPublicRoute:
+    Type: AWS::EC2::Route
+    DependsOn: EcsVPCGatewayAttachment
+    Properties:
+      RouteTableId: !Ref EcsPublicRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref EcsInternetGateway
+
+  EcsPrivateRoute:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref EcsPrivateRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref EcsNatGateway
+
+  EcsPublicSubnetRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref EcsPublicSubnet
+      RouteTableId: !Ref EcsPublicRouteTable
+
+  EcsPrivateSubnetRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref EcsPrivateSubnet
+      RouteTableId: !Ref EcsPrivateRouteTable
+
+Outputs:
+  EcsClusterArn:
+    Description: ARN of the ECS Cluster
+    Value: !GetAtt EcsCluster.Arn
+  EcsSecurityGroupId:
+    Description: ID of the ECS Security Group
+    Value: !Ref EcsSecurityGroup
+  EcsPublicSubnetId:
+    Description: ID of the ECS Public Subnet
+    Value: !Ref EcsPublicSubnet
+  EcsPrivateSubnetId:
+    Description: ID of the ECS Private Subnet
+    Value: !Ref EcsPrivateSubnet
