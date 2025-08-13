@@ -13,12 +13,11 @@ curl -o "/tmp/tig.rpm" "http://download-ib01.fedoraproject.org/pub/epel/7/$ARCH/
 curl -sSL -o /tmp/rg.tar.gz "https://github.com/BurntSushi/ripgrep/releases/download/14.1.1/ripgrep-14.1.1-x86_64-unknown-linux-musl.tar.gz" && tar -xvf /tmp/rg.tar.gz && cp "ripgrep-14.1.1-x86_64-unknown-linux-musl/rg" "/usr/local/bin/rg"
 
 cat <<EOF >>/etc/ecs/ecs.config
-ECS_LOGLEVEL=debug
+ECS_LOGLEVEL=info
 ECS_LOG_ROLLOVER_TYPE=size
 ECS_ENABLE_SPOT_INSTANCE_DRAINING=true
 ECS_ENGINE_TASK_CLEANUP_WAIT_DURATION=5m
 ECS_LOG_MAX_FILE_SIZE_MB=3000
-ECS_WARM_POOLS_CHECK=true
 EOF
 
 
