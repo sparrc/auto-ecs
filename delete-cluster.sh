@@ -20,4 +20,3 @@ done
 aws cloudformation delete-stack --region "$REGION" --stack-name ${CLUSTERNAME}
 echo "Waiting for stack deletion to complete"
 aws cloudformation wait stack-delete-complete --region "$REGION" --stack-name ${CLUSTERNAME}
-aws cloudformation describe-stacks --region ${REGION} --stack-name ${CLUSTERNAME} | jq .
